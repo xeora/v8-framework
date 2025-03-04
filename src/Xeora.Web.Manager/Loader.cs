@@ -109,7 +109,7 @@ namespace Xeora.Web.Manager
                 DirectoryInfo domainExecutables =
                     new DirectoryInfo(domainExecutablesLocation);
                 if (domainExecutables.Exists)
-                    this.CopyToTarget(domainExecutables, this.Path);
+                    CopyToTarget(domainExecutables, this.Path);
 
                 DirectoryInfo domainChildren =
                     new DirectoryInfo(System.IO.Path.Combine(domain.FullName, Loader.ADDONS));
@@ -118,7 +118,7 @@ namespace Xeora.Web.Manager
             }
         }
 
-        private void CopyToTarget(DirectoryInfo sourceRoot, string target)
+        private static void CopyToTarget(DirectoryInfo sourceRoot, string target)
         {
             foreach (FileInfo fI in sourceRoot.GetFiles())
             {
@@ -138,7 +138,7 @@ namespace Xeora.Web.Manager
                 if (applicationLocation.Exists) continue;
 
                 applicationLocation.Create();
-                this.CopyToTarget(dI, applicationLocation.FullName);
+                CopyToTarget(dI, applicationLocation.FullName);
             }
         }
 
@@ -173,8 +173,7 @@ namespace Xeora.Web.Manager
 
             foreach (DirectoryInfo application in cacheRoot.GetDirectories())
             {
-                if (application.Name.Equals("PoolSessions") ||
-                    application.Name.Equals(this.Id))
+                if (application.Name.Equals(this.Id))
                     continue;
 
                 if (!Loader.AvailableToDelete(application)) continue;
