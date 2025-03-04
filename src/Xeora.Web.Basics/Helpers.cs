@@ -252,13 +252,6 @@ namespace Xeora.Web.Basics
             new Service.VariablePoolOperation(Helpers.Context.Session.SessionId, Helpers.Context.HashCode);
 
         /// <summary>
-        /// Gets the variable pool for xService
-        /// </summary>
-        /// <value>Variable pool instance for xService.</value>
-        public static Service.VariablePoolOperation VariablePoolForxService =>
-            new Service.VariablePoolOperation("000000000000000000000000", "00000001");
-
-        /// <summary>
         /// Calls the side Xeora executable belongs to the current domain, to the side domain, or to the sub domains
         /// </summary>
         /// <returns>Call result</returns>

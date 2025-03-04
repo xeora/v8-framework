@@ -19,8 +19,6 @@
         public const string TEMPLATE_NOTFOUND = "{0} Named Template file is not found";
         public const string TEMPLATE_IDMUSTBESET = "ServiceId must be set";
 
-        public const string XSERVICE_AUTH = "This xService Requires Authentication";
-
         public const string SYSTEM_ERROROCCURED = "System Error Occured";
 
         public const string ARGUMENT_CANNOTBEEMPTY = "Key should be exists and valid for arguments collection";

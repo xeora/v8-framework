@@ -13,7 +13,6 @@ namespace Xeora.Web.Basics.Domain
         string ContentsVirtualPath { get; }
         ISettings Settings { get; }
         ILanguages Languages { get; }
-        IxService xService { get; }
 
         /// <summary>
         /// Provides the domain contents file stream

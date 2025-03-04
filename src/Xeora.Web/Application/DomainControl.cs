@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Security;
 using System.Text.RegularExpressions;
 using Xeora.Web.Directives;
 using Xeora.Web.Manager;
@@ -13,7 +12,7 @@ namespace Xeora.Web.Application
     {
         private enum ControlTypes
         {
-            Web, // template, xService, xSocket
+            Web, // template, xSocket
             Socket // WebSocket
         }
         
@@ -265,7 +264,6 @@ namespace Xeora.Web.Application
                         }
 
                         break;
-                    case Basics.Domain.ServiceTypes.xService:
                     case Basics.Domain.ServiceTypes.xSocket:
                     case Basics.Domain.ServiceTypes.WebSocket:
                         this.IsAuthenticationRequired = serviceItem.Authentication;
@@ -485,37 +483,6 @@ namespace Xeora.Web.Application
                 case Basics.Domain.ServiceTypes.Template:
                     this.ServiceResult = 
                         this.Domain.Render(this.ServiceDefinition, messageResult, updateBlockControlIdStack);
-
-                    break;
-                case Basics.Domain.ServiceTypes.xService:
-                    if (this.IsAuthenticationRequired)
-                    {
-                        Basics.X.ServiceParameterCollection serviceParameterCol =
-                            new Basics.X.ServiceParameterCollection();
-                        serviceParameterCol.ParseXml(this._Context.Request.Body.Form["xParams"]);
-
-                        if (serviceParameterCol.PublicKey != null)
-                        {
-                            this.IsAuthenticationRequired = false;
-
-                            foreach (string authKey in this._AuthenticationKeys)
-                            {
-                                if (this.Domain.xService.ReadSessionVariable(serviceParameterCol.PublicKey, authKey) != null) continue;
-                                
-                                this.IsAuthenticationRequired = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!this.IsAuthenticationRequired)
-                        this.ServiceResult = this.Domain.xService.Render(this._ExecuteIn, this.ServiceDefinition.ServiceId);
-                    else
-                    {
-                        object methodResult = new SecurityException(Global.SystemMessages.XSERVICE_AUTH);
-
-                        this.ServiceResult = this.Domain.xService.GenerateXml(methodResult);
-                    }
 
                     break;
             }

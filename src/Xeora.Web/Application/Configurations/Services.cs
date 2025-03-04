@@ -71,10 +71,6 @@ namespace Xeora.Web.Application.Configurations
                                 tServiceItem.MimeType = "application/octet-stream";
 
                             break;
-                        case Basics.Domain.ServiceTypes.xService:
-                            tServiceItem.MimeType = "text/xml; charset=utf-8";
-
-                            break;
                         default:
                             if (!string.IsNullOrEmpty(mimeType))
                                 tServiceItem.MimeType = mimeType;

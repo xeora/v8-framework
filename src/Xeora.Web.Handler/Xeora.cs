@@ -112,7 +112,7 @@ namespace Xeora.Web.Handler
 
                 if (this.WebSocket != null)
                 {
-                    this.HandleServiceRequest(); // Service Request (Template, xService, xSocket, webSocket)
+                    this.HandleServiceRequest(); // Service Request (Template, xSocket, webSocket)
                     return true;
                 }
 
@@ -150,7 +150,7 @@ namespace Xeora.Web.Handler
                 if (this._DomainControl.ServiceDefinition == null)
                     this.HandleStaticFile(); // Static File that has the same level of Application folder or Domain Content File
                 else
-                    this.HandleServiceRequest(); // Service Request (Template, xService, xSocket, webSocket)
+                    this.HandleServiceRequest(); // Service Request (Template, xSocket, webSocket)
 
                 return true;
             }
@@ -282,10 +282,6 @@ namespace Xeora.Web.Handler
             {
                 case Basics.Domain.ServiceTypes.Template:
                     this.HandleTemplateRequest();
-
-                    break;
-                case Basics.Domain.ServiceTypes.xService:
-                    this.CreateServiceResult(null);
 
                     break;
                 case Basics.Domain.ServiceTypes.xSocket:
@@ -765,31 +761,7 @@ namespace Xeora.Web.Handler
                         Helpers.CreateUrl(true, authenticationPage, referrerUrlQueryString));
 
                     break;
-                case Basics.Domain.ServiceTypes.xService:
-                    this.CreateServiceResult(null);
-
-                    break;
             }
-        }
-
-        private void CreateServiceResult(Message messageResult)
-        {
-            this._DomainControl.RenderService(messageResult, null);
-
-            StringWriter writer = null;
-            try
-            {
-                writer = new StringWriter();
-                writer.Write("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
-                writer.Write(this._DomainControl.ServiceResult.Content);
-                writer.Flush();
-            }
-            finally
-            {
-                writer?.Dispose();
-            }
-
-            this.WriteOutput(this._DomainControl.ServiceMimeType, writer.ToString(), this._SupportCompression);
         }
 
         private void CreateTemplateResult(Message messageResult, string methodResult)

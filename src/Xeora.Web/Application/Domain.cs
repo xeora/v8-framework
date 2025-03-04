@@ -96,7 +96,6 @@ namespace Xeora.Web.Application
         public Basics.Domain.ISettings Settings => this.Deployment.Settings;
         public Basics.Domain.ILanguages Languages => this._LanguagesHolder;
         private Basics.Domain.IControls Controls => this.Deployment.Controls;
-        public Basics.Domain.IxService xService => this.Deployment.xService;
 
         public void ProvideFileStream(string requestedFilePath, out Stream outputStream)
         {

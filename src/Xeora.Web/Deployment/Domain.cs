@@ -88,7 +88,6 @@ namespace Xeora.Web.Deployment
 
             this.Controls =
                 new Application.ControlManager(this.Deployment.ProvideControlsContent());
-            this.xService = new Application.Configurations.xService();
 
             // Compile Children Domains
             this._Children =
@@ -137,7 +136,6 @@ namespace Xeora.Web.Deployment
         public Basics.Domain.ISettings Settings { get; private set; }
         public Basics.Domain.ILanguages Languages { get; private set; }
         public Basics.Domain.IControls Controls { get; private set; }
-        public Basics.Domain.IxService xService { get; private set; }
         public Basics.Domain.Info.DomainCollection Children => this._Children;
 
         public void ProvideContentFileStream(string languageId, string requestedFilePath, out Stream outputStream) =>
