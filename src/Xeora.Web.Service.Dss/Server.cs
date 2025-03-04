@@ -197,7 +197,7 @@ namespace Xeora.Web.Service.Dss
                 Console.WriteLine();
             }
 
-            Environment.Exit(500);
+            Environment.Exit(99);
         }
 
         private bool _Terminating;
