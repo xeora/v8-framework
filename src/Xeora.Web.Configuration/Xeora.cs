@@ -22,7 +22,7 @@ namespace Xeora.Web.Configuration
         [JsonProperty(PropertyName = "session")]
         public Basics.Configuration.ISession Session { get; private set; }
 
-        [JsonProperty(PropertyName = "application", Required = Required.Always)]
+        [JsonProperty(PropertyName = "application")]
         public Basics.Configuration.IApplication Application { get; private set; }
 
         [JsonProperty(PropertyName = "user")]
