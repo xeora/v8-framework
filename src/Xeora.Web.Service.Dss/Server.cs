@@ -14,20 +14,24 @@ namespace Xeora.Web.Service.Dss
     public class Server
     {
         private readonly Mutex _TerminationLock;
+        private readonly string _ConfigurationPath;
+        private readonly string _ConfigurationFile;
         private readonly ConcurrentDictionary<Guid, TcpClient> _Clients;
         private readonly Thread _ClientCleanupThread;
         
-        private readonly IPEndPoint _ServiceEndPoint;
         private TcpListener _TcpListener;
         private readonly IManager _Manager;
 
-        public Server(IPEndPoint serviceEndPoint)
+        public Server(string configurationFilePath)
         {
             this._TerminationLock = new Mutex();
             this._Clients = new ConcurrentDictionary<Guid, TcpClient>();
             this._ClientCleanupThread = new Thread(() =>
             {
-                Basics.Logging.Information("Started client cleanup thread...");
+                Basics.Logging.Current
+                    .Information("Started client cleanup thread...")
+                    .Flush();
+
                 try
                 {
                     while (true)
@@ -69,20 +73,41 @@ namespace Xeora.Web.Service.Dss
             
             Console.CancelKeyPress += this.OnTerminateSignal;
 
-            this._ServiceEndPoint = serviceEndPoint;
+            this._ConfigurationPath = System.IO.Path.GetDirectoryName(configurationFilePath);
+            this._ConfigurationFile = System.IO.Path.GetFileName(configurationFilePath);
+            
             this._Manager = new Internal.Manager();
         }
 
         public async Task<int> StartAsync()
         {
-            Server.PrintLogo();
-
             try
             {
-                this._TcpListener = new TcpListener(this._ServiceEndPoint);
+                Configuration.Manager.Initialize(this._ConfigurationPath, this._ConfigurationFile);
+                
+                Negotiator negotiator =
+                    new Negotiator();
+                typeof(Basics.Helpers).InvokeMember(
+                    "Packet",
+                    BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.SetProperty,
+                    null,
+                    null,
+                    new object[] { new Basics.DomainPacket("Default", negotiator) }
+                );
+                
+                Server.PrintLogo();
+                
+                IPEndPoint serviceEndPoint = 
+                    new IPEndPoint(
+                        Configuration.Manager.Current.Configuration.Service.Address, 
+                        Configuration.Manager.Current.Configuration.Service.Port
+                    );
+                this._TcpListener = new TcpListener(serviceEndPoint);
                 this._TcpListener.Start(100);
 
-                Basics.Logging.Information($"XeoraDss is started at {this._ServiceEndPoint}");
+                Basics.Logging.Current
+                    .Information($"XeoraDss is started at {serviceEndPoint}")
+                    .Flush();
                 
                 this._ClientCleanupThread.Start();
             }
