@@ -33,14 +33,16 @@ namespace Xeora.Web.Service.Workers
             }
             catch (Exception e)
             {
-                Basics.Logging.Error(
-                    "ThreadPool Exception...",
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Basics.Logging.Current
+                    .Error(
+                        "ThreadPool Exception...",
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
             }
             finally
             {
@@ -78,14 +80,16 @@ namespace Xeora.Web.Service.Workers
 
                 if (builder.Length == 0) return;
 
-                Basics.Logging.Information(
-                    "ActionContainer Report",
-                    new Dictionary<string, object>
-                    {
-                        { "id", this.Id },
-                        { "summary", builder }
-                    }
-                );
+                Basics.Logging.Current
+                    .Information(
+                        "ActionContainer Report",
+                        new Dictionary<string, object>
+                        {
+                            { "id", this.Id },
+                            { "summary", builder }
+                        }
+                    )
+                    .Flush();
             }
             catch
             {

@@ -46,13 +46,15 @@ namespace Xeora.Web.Service.Workers
                     )
                 );
 
-            Basics.Logging.Register(keyInfo => {
+            Basics.Console.Register(keyInfo => {
                 if ((keyInfo.Modifiers & ConsoleModifiers.Control) == 0 || keyInfo.Key != ConsoleKey.D)
                     return;
 
                 if (this._ActionQueue.IsAddingCompleted)
                 {
-                    Basics.Logging.Information("Worker Factory has been already requested to be killed");
+                    Basics.Logging.Current
+                        .Information("Worker Factory has been already requested to be killed")
+                        .Flush();
                     return;
                 }
 
@@ -65,8 +67,10 @@ namespace Xeora.Web.Service.Workers
                     workerThread.PrintReport();
                 }
 
-                Basics.Logging.Information(
-                    $"Worker Factory is processing {processing} Task(s), {this._Workers.Count - processing} available Worker(s) in total {this._Workers.Count} Worker(s)");    
+                Basics.Logging.Current
+                    .Information(
+                        $"Worker Factory is processing {processing} Task(s), {this._Workers.Count - processing} available Worker(s) in total {this._Workers.Count} Worker(s)")
+                    .Flush();
             });
         }
 
@@ -77,7 +81,9 @@ namespace Xeora.Web.Service.Workers
         {
             if (Factory._current == null) return;
             
-            Basics.Logging.Information("Worker Factory is draining...");
+            Basics.Logging.Current
+                .Information("Worker Factory is draining...")
+                .Flush();
 
             this._ActionQueue.CompleteAdding();
             this._ActionQueue.Dispose();
@@ -87,7 +93,9 @@ namespace Xeora.Web.Service.Workers
             
             Factory._current = null;
             
-            Basics.Logging.Information("Worker Factory is killed!");
+            Basics.Logging.Current
+                .Information("Worker Factory is killed!")
+                .Flush();
         }
 
         private static readonly object Lock = new object();

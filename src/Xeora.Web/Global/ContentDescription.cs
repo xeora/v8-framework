@@ -139,7 +139,9 @@ namespace Xeora.Web.Global
             {
                 this.Parts.Add(string.Empty);
 
-                Basics.Logging.Warning($"Empty Block is detected! [{controlIdWithIndex}]");
+                Basics.Logging.Current
+                    .Warning($"Empty Block is detected! [{controlIdWithIndex}]")
+                    .Flush();
             }
 
             ContentDescription.PartsCache.TryAdd(

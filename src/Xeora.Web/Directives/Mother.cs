@@ -106,7 +106,22 @@ namespace Xeora.Web.Directives
 
                     if (value.Item2 / value.Item1 > Configurations.Xeora.Application.Main.AnalysisThreshold)
                     {
-                        Logging.Warning(
+                        Logging.Current
+                            .Warning(
+                                $"analysed(r) - {key}",
+                                new Dictionary<string, object>
+                                {
+                                    { "count", value.Item1 },
+                                    { "totalDuration", value.Item2 },
+                                    { "approximateDuration", value.Item2 / value.Item1 }
+                                },
+                                Helpers.Context.UniqueId
+                            );
+                        continue;
+                    }
+
+                    Logging.Current
+                        .Information(
                             $"analysed(r) - {key}",
                             new Dictionary<string, object>
                             {
@@ -116,19 +131,6 @@ namespace Xeora.Web.Directives
                             },
                             Helpers.Context.UniqueId
                         );
-                        continue;
-                    }
-
-                    Logging.Information(
-                        $"analysed(r) - {key}",
-                        new Dictionary<string, object>
-                        {
-                            { "count", value.Item1 },
-                            { "totalDuration", value.Item2 },
-                            { "approximateDuration", value.Item2 / value.Item1 }
-                        },
-                        Helpers.Context.UniqueId
-                    );
                 }
             }
             catch (Exception)

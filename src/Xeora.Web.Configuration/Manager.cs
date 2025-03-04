@@ -29,7 +29,7 @@ namespace Xeora.Web.Configuration
             {
                 sR = new StreamReader(confFile, Encoding.UTF8);
                 jsonReader = new Newtonsoft.Json.JsonTextReader(sR);
-
+                
                 Newtonsoft.Json.JsonSerializer jsonSerializer = new Newtonsoft.Json.JsonSerializer();
                 this.Configuration = jsonSerializer.Deserialize<Xeora>(jsonReader);
             }

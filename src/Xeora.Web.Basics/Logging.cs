@@ -13,11 +13,10 @@ namespace Xeora.Web.Basics
     {
         private readonly object _MessageLock = new();
         private readonly Dictionary<string, Queue<Message>> _MessageGroups;
-        private readonly ConcurrentDictionary<string, Action<ConsoleKeyInfo>> _KeyListeners;
         private readonly object _FlushingLock = new();
         private readonly ConcurrentDictionary<string, bool> _Flushing;
 
-        private static readonly Newtonsoft.Json.JsonSerializer _JsonSerializer =
+        private static readonly Newtonsoft.Json.JsonSerializer JsonSerializer =
             Newtonsoft.Json.JsonSerializer.CreateDefault();
         
         private class Message
@@ -38,10 +37,7 @@ namespace Xeora.Web.Basics
         private Logging()
         {
             this._MessageGroups = new Dictionary<string, Queue<Message>>();
-            this._KeyListeners = new ConcurrentDictionary<string, Action<ConsoleKeyInfo>>();
             this._Flushing = new ConcurrentDictionary<string, bool>();
-
-            ThreadPool.QueueUserWorkItem(_ => this.StartKeyListener());
         }
 
         private void Queue(Message message, string groupId)
@@ -108,7 +104,7 @@ namespace Xeora.Web.Basics
         {
             if (Configurations.Xeora.Service.LoggingFormat == LoggingFormats.Json)
             {
-                Console.WriteLine(message.Value);
+                System.Console.WriteLine(message.Value);
                 return;
             }
             
@@ -122,89 +118,44 @@ namespace Xeora.Web.Basics
                 string m = sR.ReadLine();
                 if (string.IsNullOrEmpty(m))
                 {
-                    formattedMessage.Append("".PadRight(Console.WindowWidth, ' '));
+                    formattedMessage.Append("".PadRight(System.Console.WindowWidth, ' '));
                     continue;
                 }
-                formattedMessage.AppendLine(m.PadRight(Console.WindowWidth, ' '));
+                formattedMessage.AppendLine(m.PadRight(System.Console.WindowWidth, ' '));
             }
 
             switch (message.Type)
             {
+                case LoggingTypes.Warn:
+                    System.Console.BackgroundColor = ConsoleColor.Yellow;
+                    System.Console.ForegroundColor = ConsoleColor.Black;
+                    System.Console.Write(formattedMessage);
+                    System.Console.ResetColor();
+                    return;
+                case LoggingTypes.Error:
+                    System.Console.BackgroundColor = ConsoleColor.Red;
+                    System.Console.ForegroundColor = ConsoleColor.White;
+                    System.Console.Write(formattedMessage);
+                    System.Console.ResetColor();
+                    return;
                 case LoggingTypes.Trace:
                 case LoggingTypes.Debug:
                 case LoggingTypes.Info:
-                    Console.Write(formattedMessage);
-                    Console.ResetColor();
-                    return;
-                case LoggingTypes.Warn:
-                    Console.BackgroundColor = ConsoleColor.Yellow;
-                    Console.ForegroundColor = ConsoleColor.Black;
-                    Console.Write(formattedMessage);
-                    Console.ResetColor();
-                    return;
-                case LoggingTypes.Error:
-                    Console.BackgroundColor = ConsoleColor.Red;
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write(formattedMessage);
-                    Console.ResetColor();
+                default:
+                    System.Console.Write(formattedMessage);
+                    System.Console.ResetColor();
                     return;
             }
         }
 
-        private void StartKeyListener()
-        {
-            do
-            {
-                ConsoleKeyInfo keyInfo;
-                try
-                {
-                    keyInfo = Console.ReadKey(true);
-                }
-                catch (InvalidOperationException)
-                {
-                    Logging.Warning("Console inputs are not available!");
-
-                    return;
-                }
-
-                IEnumerator<KeyValuePair<string, Action<ConsoleKeyInfo>>> enumerator =
-                    this._KeyListeners.GetEnumerator();
-
-                try
-                {
-                    while (enumerator.MoveNext())
-                    {
-                        Action<ConsoleKeyInfo> action = 
-                            enumerator.Current.Value;
-
-                        ThreadPool.QueueUserWorkItem(state => ((Action<ConsoleKeyInfo>)state)?.Invoke(keyInfo), action);
-                    }
-                }
-                finally
-                {
-                    enumerator.Dispose();
-                }
-            } while (true);
-        }
-
-        private string AddKeyListener(Action<ConsoleKeyInfo> callback)
-        {
-            if (callback == null)
-                return Guid.Empty.ToString();
-
-            string registrationId = 
-                Guid.NewGuid().ToString();
-            this._KeyListeners.TryAdd(registrationId, callback);
-            
-            return registrationId;
-        }
-
-        private bool RemoveKeyListener(string callbackId) =>
-            !string.IsNullOrEmpty(callbackId) && this._KeyListeners.TryRemove(callbackId, out _);
-
         private static readonly object Lock = new();
         private static Logging _current;
-        private static Logging Current
+        
+        /// <summary>
+        /// Provides active logging instance
+        /// </summary>
+        /// <returns>Active Logging Instance Object</returns>
+        public static Logging Current
         {
             get
             {
@@ -223,62 +174,67 @@ namespace Xeora.Web.Basics
         /// <summary>
         /// Push the message to the Xeora framework console as trace
         /// </summary>
+        /// <returns>Logging Object for chain reaction</returns>
         /// <param name="message">Message Content</param>
         /// <param name="fields">Message Details or fields to print</param>
         /// <param name="groupId">Give a unique id for the push to group all the inputs together</param>
-        public static void Trace(
+        public Logging Trace(
             string message, 
             Dictionary<string, object> fields = null,
             string groupId = null) =>
-            Logging.Push(LoggingTypes.Trace, message, fields, groupId);
+            this.Push(LoggingTypes.Trace, message, fields, groupId);
         
         /// <summary>
         /// Push the message to the Xeora framework console as debug
         /// </summary>
+        /// <returns>Logging Object for chain reaction</returns>
         /// <param name="message">Message Content</param>
         /// <param name="fields">Message Details or fields to print</param>
         /// <param name="groupId">Give a unique id for the push to group all the inputs together</param>
-        public static void Debug(
+        public Logging Debug(
             string message, 
             Dictionary<string, object> fields = null,
             string groupId = null) =>
-            Logging.Push(LoggingTypes.Debug, message, fields, groupId);
+            this.Push(LoggingTypes.Debug, message, fields, groupId);
 
         /// <summary>
         /// Push the message to the Xeora framework console as information
         /// </summary>
+        /// <returns>Logging Object for chain reaction</returns>
         /// <param name="message">Message Content</param>
         /// <param name="fields">Message Details or fields to print</param>
         /// <param name="groupId">Give a unique id for the push to group all the inputs together</param>
-        public static void Information(
+        public Logging Information(
             string message, 
             Dictionary<string, object> fields = null,
             string groupId = null) =>
-            Logging.Push(LoggingTypes.Info, message, fields, groupId);
+            this.Push(LoggingTypes.Info, message, fields, groupId);
         
         /// <summary>
         /// Push the message to the Xeora framework console as warning
         /// </summary>
+        /// <returns>Logging Object for chain reaction</returns>
         /// <param name="message">Message Content</param>
         /// <param name="fields">Message Details or fields to print</param>
         /// <param name="groupId">Give a unique id for the push to group all the inputs together</param>
-        public static void Warning(
+        public Logging Warning(
             string message, 
             Dictionary<string, object> fields = null,
             string groupId = null) =>
-            Logging.Push(LoggingTypes.Warn, message, fields, groupId);
+            this.Push(LoggingTypes.Warn, message, fields, groupId);
         
         /// <summary>
         /// Push the message to the Xeora framework console as error
         /// </summary>
+        /// <returns>Logging Object for chain reaction</returns>
         /// <param name="message">Message Content</param>
         /// <param name="fields">Message Details or fields to print</param>
         /// <param name="groupId">Give a unique id for the push to group all the inputs together</param>
-        public static void Error(
+        public Logging Error(
             string message, 
             Dictionary<string, object> fields = null,
             string groupId = null) =>
-            Logging.Push(LoggingTypes.Error, message, fields, groupId);
+            this.Push(LoggingTypes.Error, message, fields, groupId);
 
         /// <summary>
         /// Push the message to the Xeora framework console as error and quits
@@ -286,12 +242,15 @@ namespace Xeora.Web.Basics
         /// <param name="message">Message Content</param>
         /// <param name="fields">Message Details or fields to print</param>
         /// <param name="groupId">Give a unique id for the push to group all the inputs together</param>
-        public static void Fatal(
+        public void Fatal(
             string message,
             Dictionary<string, object> fields = null,
             string groupId = null)
         {
-            Logging.Push(LoggingTypes.Error, message, fields, groupId);
+            this.Push(LoggingTypes.Error, message, fields, groupId)
+                .Flush()
+                .Wait();
+            
             Environment.Exit(99);
         }
 
@@ -313,23 +272,19 @@ namespace Xeora.Web.Basics
             }
         }
         
-        private static void Push(LoggingTypes type, string message, Dictionary<string, object> fields = null, string groupId = null)
+        private Logging Push(LoggingTypes type, string message, Dictionary<string, object> fields = null, string groupId = null)
         {
-            if (!Configurations.Xeora.Service.Logging) return;
-            if (!Logging.MatchLoggingLevel(type)) return;
+            if (!Configurations.Xeora.Service.Logging) return Logging.Current;
+            if (!MatchLoggingLevel(type)) return Logging.Current;
 
-            switch (Configurations.Xeora.Service.LoggingFormat)
+            return Configurations.Xeora.Service.LoggingFormat switch
             {
-                case LoggingFormats.Json:
-                    Logging.PrintJson(type, message, fields, groupId);
-                    break;
-                default:
-                    Logging.PrintPlain(type, message, fields, groupId);
-                    break;
-            }
+                LoggingFormats.Json => this.PrintJson(type, message, fields, groupId),
+                _ => this.PrintPlain(type, message, fields, groupId)
+            };
         }
         
-        private static void PrintPlain(LoggingTypes type, string message, Dictionary<string, object> fields = null, string groupId = null)
+        private Logging PrintPlain(LoggingTypes type, string message, Dictionary<string, object> fields = null, string groupId = null)
         {
             string typePointer = 
                 type.ToString().ToUpperInvariant().PadRight(5, ' ');
@@ -341,11 +296,13 @@ namespace Xeora.Web.Basics
                 foreach (var (key, value) in fields)
                     consoleMessage = $"{consoleMessage}, {key}={value}";
 
-            Logging.Current.Queue(
+            this.Queue(
                 Message.Create(type, consoleMessage), groupId);
+
+            return this;
         }
         
-        private static void PrintJson(LoggingTypes type, string message, Dictionary<string, object> fields, string groupId = null)
+        private Logging PrintJson(LoggingTypes type, string message, Dictionary<string, object> fields, string groupId = null)
         {
             Dictionary<string, object> jsonObject = new Dictionary<string, object>
             {
@@ -362,10 +319,12 @@ namespace Xeora.Web.Basics
                 }
 
             string consoleMessage =
-                Logging.SerializeToJson(jsonObject);
+                SerializeToJson(jsonObject);
             
-            Logging.Current.Queue(
+            this.Queue(
                 Message.Create(type, consoleMessage), groupId);
+            
+            return this;
         }
 
 
@@ -377,7 +336,7 @@ namespace Xeora.Web.Basics
             {
                 sW = new StringWriter();
                 jsonWriter = new Newtonsoft.Json.JsonTextWriter(sW);
-                Logging._JsonSerializer.Serialize(jsonWriter, value);
+                Logging.JsonSerializer.Serialize(jsonWriter, value);
 
                 return sW.ToString();
             }
@@ -392,23 +351,7 @@ namespace Xeora.Web.Basics
         /// Flush the caches log entries according to groupId
         /// </summary>
         /// <param name="groupId">(optional) Group Id for the flush</param>
-        public static Task Flush(string groupId = null) =>
-            Task.Factory.StartNew(() => Logging.Current._Flush(groupId));
-
-        /// <summary>
-        /// Register an action to Xeora framework console key listener
-        /// </summary>
-        /// <returns>Registration Id</returns>
-        /// <param name="callback">Listener action to be invoked when a key pressed on Xeora framework console</param>
-        public static string Register(Action<ConsoleKeyInfo> callback) =>
-            Logging.Current.AddKeyListener(callback);
-
-        /// <summary>
-        /// Unregister an action registered with an Id previously
-        /// </summary>
-        /// <returns>Removal Result, <c>true</c> if removed; otherwise, <c>false</c></returns>
-        /// <param name="registrationId">registration Id of action</param>
-        public static bool Unregister(string registrationId) =>
-            Logging.Current.RemoveKeyListener(registrationId);
+        public Task Flush(string groupId = null) =>
+            Task.Factory.StartNew(() => this._Flush(groupId));
     }
 }

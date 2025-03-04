@@ -46,7 +46,21 @@ namespace Xeora.Web.Manager
 
             if (totalMs > Basics.Configurations.Xeora.Application.Main.AnalysisThreshold)
             {
-                Basics.Logging.Warning(
+                Basics.Logging.Current
+                    .Warning(
+                        "analysed - execution duration",
+                        new Dictionary<string, object>
+                        {
+                            { "duration", totalMs },
+                            { "bind", bind },
+                        },
+                        Basics.Helpers.Context.UniqueId
+                    );
+                return rInvokeResult;
+            }
+            
+            Basics.Logging.Current
+                .Information(
                     "analysed - execution duration",
                     new Dictionary<string, object>
                     {
@@ -55,18 +69,6 @@ namespace Xeora.Web.Manager
                     },
                     Basics.Helpers.Context.UniqueId
                 );
-                return rInvokeResult;
-            }
-            
-            Basics.Logging.Information(
-                "analysed - execution duration",
-                new Dictionary<string, object>
-                {
-                    { "duration", totalMs },
-                    { "bind", bind },
-                },
-                Basics.Helpers.Context.UniqueId
-            );
 
             return rInvokeResult;
         }
@@ -98,14 +100,16 @@ namespace Xeora.Web.Manager
             }
             catch (Exception e)
             {
-                Basics.Logging.Error(
-                    "Execution Exception...", 
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Basics.Logging.Current
+                    .Error(
+                        "Execution Exception...", 
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
 
                 return e;
             }

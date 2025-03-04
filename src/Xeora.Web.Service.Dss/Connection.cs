@@ -34,8 +34,6 @@ namespace Xeora.Web.Service.Dss
             
             this._RemoteClient.Close();
             this._RemoteClient.Dispose();
-            
-            Basics.Logging.Flush();
         }
 
         private bool Validate(SyncStreamHandler syncStreamHandler)
@@ -74,14 +72,18 @@ namespace Xeora.Web.Service.Dss
             {
                 // Skip SocketExceptions
                 if (e is not IOException || e.InnerException is not SocketException)
-                    Basics.Logging.Error(
-                        "SYSTEM ERROR",
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message },
-                            { "trace", e.ToString() }
-                        }
-                    );
+                {
+                    Basics.Logging.Current
+                        .Error(
+                            "SYSTEM ERROR",
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message },
+                                { "trace", e.ToString() }
+                            }
+                        )
+                        .Flush();
+                }
 
                 return false;
             }
@@ -116,14 +118,16 @@ namespace Xeora.Web.Service.Dss
                 if (e is IOException && e.InnerException is SocketException)
                     return;
 
-                Basics.Logging.Error(
-                    "SYSTEM ERROR",
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Basics.Logging.Current
+                    .Error(
+                        "SYSTEM ERROR",
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
             }
         }
 

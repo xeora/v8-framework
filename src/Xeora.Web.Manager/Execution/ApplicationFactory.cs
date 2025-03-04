@@ -79,7 +79,9 @@ namespace Xeora.Web.Manager.Execution
                 this._Cache[key].Unload();
             
             if (this._Cache.Count > 0)
-                Logging.Information("Applications are unloaded!");
+                Logging.Current
+                    .Information("Applications are unloaded!")
+                    .Flush();
         }
     }
 }

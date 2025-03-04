@@ -16,12 +16,13 @@ namespace Xeora.Web.Handler
             this._Handlers = new ConcurrentDictionary<string, Container>();
             this._RefreshLock = new object();
 
-            Basics.Logging.Register(keyInfo => {
-                if ((keyInfo.Modifiers & ConsoleModifiers.Control) == 0 || keyInfo.Key != ConsoleKey.R)
-                    return;
+            Basics.Console
+                .Register(keyInfo => {
+                    if ((keyInfo.Modifiers & ConsoleModifiers.Control) == 0 || keyInfo.Key != ConsoleKey.R)
+                        return;
 
-                this.Refresh();
-            });
+                    this.Refresh();
+                });
         }
 
         private static readonly object Lock = new object();
@@ -114,7 +115,9 @@ namespace Xeora.Web.Handler
                     return;
                 this._Refresh = true;
                 
-                Basics.Logging.Information("Domains refresh requested!");
+                Basics.Logging.Current
+                    .Information("Domains refresh requested!")
+                    .Flush();
             }
             finally
             {

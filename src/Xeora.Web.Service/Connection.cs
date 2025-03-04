@@ -39,8 +39,6 @@ namespace Xeora.Web.Service
 
             this._RemoteClient.Close();
             this._RemoteClient.Dispose();
-            
-            Basics.Logging.Flush();
         }
 
         private bool ProceedStream(out Stream remoteStream)
@@ -66,26 +64,30 @@ namespace Xeora.Web.Service
             }
             catch (IOException e)
             {
-                Basics.Logging.Debug(
-                    "Connection is rejected!",
-                    new Dictionary<string, object>
-                    {
-                        { "remoteAddress", this._RemoteIpEndPoint.ToString() },
-                        { "message", e.Message }
-                    }
-                );
+                Basics.Logging.Current
+                    .Debug(
+                        "Connection is rejected!",
+                        new Dictionary<string, object>
+                        {
+                            { "remoteAddress", this._RemoteIpEndPoint.ToString() },
+                            { "message", e.Message }
+                        }
+                    )
+                    .Flush();
 
                 return false;
             }
             catch (System.Exception e)
             {
-                Basics.Logging.Error(
-                    "SSL Connection FAILED!",
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message }
-                    }
-                );
+                Basics.Logging.Current
+                    .Error(
+                        "SSL Connection FAILED!",
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message }
+                        }
+                    )
+                    .Flush();
 
                 return false;
             }
@@ -93,14 +95,16 @@ namespace Xeora.Web.Service
 
         private void Handle(ref Net.NetworkStream remoteStream)
         {
-            Basics.Logging.Debug(
-                "Connection is accepted",
-                new Dictionary<string, object>
-                {
-                    { "remoteAddress", this._RemoteIpEndPoint.ToString() },
-                    { "ssl", Configuration.Manager.Current.Configuration.Service.Ssl }
-                }
-            );
+            Basics.Logging.Current
+                .Debug(
+                    "Connection is accepted",
+                    new Dictionary<string, object>
+                    {
+                        { "remoteAddress", this._RemoteIpEndPoint.ToString() },
+                        { "ssl", Configuration.Manager.Current.Configuration.Service.Ssl }
+                    }
+                )
+                .Flush();
             ClientState.Handle(this._RemoteIpEndPoint.Address, remoteStream);
         }
     }

@@ -72,18 +72,20 @@ namespace Xeora.Web.Service.TaskScheduler
                         {
                             try
                             {
-                                ((TaskInfo)taskState).Execute();
+                                ((TaskInfo)taskState)?.Execute();
                             }
                             catch (Exception e)
                             {
-                                Basics.Logging.Error(
-                                    "Execution Exception...",
-                                    new Dictionary<string, object>
-                                    {
-                                        { "message", e.Message },
-                                        { "trace", e.ToString() }
-                                    }
-                                );
+                                Basics.Logging.Current
+                                    .Error(
+                                        "Execution Exception...",
+                                        new Dictionary<string, object>
+                                        {
+                                            { "message", e.Message },
+                                            { "trace", e.ToString() }
+                                        }
+                                    )
+                                    .Flush();
                             }
                         },
                         taskInfo

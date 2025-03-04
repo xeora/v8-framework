@@ -67,16 +67,21 @@ namespace Xeora.Web.Service.Dss.External
                     new ResponseHandler(ref this._DssServiceClient, e =>
                     {
                         if (e is IOException)
+                        {
                             this.Reset();
-                        else
-                            Basics.Logging.Error(
+                            return;
+                        }
+                        
+                        Basics.Logging.Current
+                            .Error(
                                 "SYSTEM ERROR",
                                 new Dictionary<string, object>
                                 {
                                     { "message", e.Message },
                                     { "trace", e.ToString() }
                                 }
-                            );
+                            )
+                            .Flush();
                     });
                 this._ResponseHandler.StartHandler();
             }

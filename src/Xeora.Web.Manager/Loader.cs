@@ -36,7 +36,9 @@ namespace Xeora.Web.Manager
             this._Watcher = 
                 new Watcher(this._DomainRootLocation, () =>
                 {
-                    Basics.Logging.Information("Library changes have been detected!");
+                    Basics.Logging.Current
+                        .Information("Detected changes in Xeora Libraries!")
+                        .Flush();
                     
                     // Reload
                     this.Load();
@@ -62,7 +64,7 @@ namespace Xeora.Web.Manager
             try
             {
                 this.Id = Guid.NewGuid().ToString();
-                
+
                 if (!Directory.Exists(this.Path))
                     Directory.CreateDirectory(this.Path);
 
@@ -70,20 +72,27 @@ namespace Xeora.Web.Manager
                     new DirectoryInfo(this._DomainRootLocation);
                 if (!domains.Exists)
                 {
-                    Basics.Logging.Warning("No application has been found to prepare!");
+                    Basics.Logging.Current
+                        .Warning("No application has been found to prepare!");
                     return;
                 }
-                
+
                 this.LoadExecutables(domains);
                 this._Watcher.Start();
-                
-                Basics.Logging.Information("Application is prepared successfully!");
+
+                Basics.Logging.Current
+                    .Information("Application is prepared successfully!");
             }
             catch (Exception)
             {
-                Basics.Logging.Error("Application preparation has been FAILED!");
+                Basics.Logging.Current
+                    .Error("Application preparation has been FAILED!");
 
                 return;
+            }
+            finally
+            {
+                Basics.Logging.Current.Flush();
             }
 
             // Do not block Application load
@@ -180,7 +189,9 @@ namespace Xeora.Web.Manager
                 }
             }
 
-            Basics.Logging.Information("Cache is cleaned up!");
+            Basics.Logging.Current
+                .Information("Cache is cleaned up!")
+                .Flush();
         }
     }
 }

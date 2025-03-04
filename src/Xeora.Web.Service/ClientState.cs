@@ -86,14 +86,16 @@ namespace Xeora.Web.Service
                     if (e is IOException && e.InnerException is SocketException)
                         return;
 
-                    Logging.Error(
-                        "Execution Exception...", 
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message },
-                            { "trace", e.ToString() }
-                        }
-                    );
+                    Logging.Current
+                        .Error(
+                            "Execution Exception...", 
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message },
+                                { "trace", e.ToString() }
+                            }
+                        )
+                        .Flush();
 
                     ClientState.PushError(500, "Internal Server Error", ref streamEnclosure);
 
@@ -110,7 +112,7 @@ namespace Xeora.Web.Service
                     else
                         context?.Dispose();
 
-                    Logging.Flush(stateId);
+                    Logging.Current.Flush(stateId);
                 }
             } while (streamEnclosure.Alive());
         }
@@ -174,7 +176,20 @@ namespace Xeora.Web.Service
 
             if (totalMs > Configurations.Xeora.Application.Main.AnalysisThreshold)
             {
-                Logging.Warning(
+                Logging.Current
+                    .Warning(
+                        "analysed - xeora handler",
+                        new Dictionary<string, object>
+                        {
+                            { "duration", totalMs }
+                        },
+                        stateId
+                    );
+                return;
+            }
+            
+            Logging.Current
+                .Information(
                     "analysed - xeora handler",
                     new Dictionary<string, object>
                     {
@@ -182,17 +197,6 @@ namespace Xeora.Web.Service
                     },
                     stateId
                 );
-                return;
-            }
-            
-            Logging.Information(
-                "analysed - xeora handler",
-                new Dictionary<string, object>
-                {
-                    { "duration", totalMs }
-                },
-                stateId
-            );
         }
 
         private static void PrintResponseAnalysis(string stateId, DateTime responseFlushBegins)
@@ -204,7 +208,20 @@ namespace Xeora.Web.Service
             
             if (totalMs > Configurations.Xeora.Application.Main.AnalysisThreshold)
             {
-                Logging.Warning(
+                Logging.Current
+                    .Warning(
+                        "analysed - response flush",
+                        new Dictionary<string, object>
+                        {
+                            { "duration", totalMs }
+                        },
+                        stateId
+                    );
+                return;
+            }
+            
+            Logging.Current
+                .Information(
                     "analysed - response flush",
                     new Dictionary<string, object>
                     {
@@ -212,17 +229,6 @@ namespace Xeora.Web.Service
                     },
                     stateId
                 );
-                return;
-            }
-            
-            Logging.Information(
-                "analysed - response flush",
-                new Dictionary<string, object>
-                {
-                    { "duration", totalMs }
-                },
-                stateId
-            );
         }
         
         private static void PrintWholeProcessAnalysis(string stateId, DateTime wholeProcessBegins, string requestRawUrl)
@@ -234,7 +240,21 @@ namespace Xeora.Web.Service
             
             if (totalMs > Configurations.Xeora.Application.Main.AnalysisThreshold)
             {
-                Logging.Warning(
+                Logging.Current
+                    .Warning(
+                        "analysed - whole process",
+                        new Dictionary<string, object>
+                        {
+                            { "duration", totalMs },
+                            { "requestRawUrl", requestRawUrl }
+                        },
+                        stateId
+                    );
+                return;
+            }
+            
+            Logging.Current
+                .Information(
                     "analysed - whole process",
                     new Dictionary<string, object>
                     {
@@ -243,18 +263,6 @@ namespace Xeora.Web.Service
                     },
                     stateId
                 );
-                return;
-            }
-            
-            Logging.Information(
-                "analysed - whole process",
-                new Dictionary<string, object>
-                {
-                    { "duration", totalMs },
-                    { "requestRawUrl", requestRawUrl }
-                },
-                stateId
-            );
         }
         
         private static void AcquireSession(Basics.Context.IHttpRequest request, out Basics.Session.IHttpSession session)

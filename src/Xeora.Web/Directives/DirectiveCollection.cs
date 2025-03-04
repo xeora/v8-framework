@@ -174,7 +174,21 @@ namespace Xeora.Web.Directives
 
             if (totalMs > Configurations.Xeora.Application.Main.AnalysisThreshold)
             {
-                Logging.Warning(
+                Logging.Current
+                    .Warning(
+                        $"analysed - {directive.GetType().Name}",
+                        new Dictionary<string, object>
+                        {
+                            { "duration", totalMs },
+                            { "directiveId", analysisOutput }
+                        },
+                        Helpers.Context.UniqueId
+                    );
+                return;
+            }
+
+            Logging.Current
+                .Information(
                     $"analysed - {directive.GetType().Name}",
                     new Dictionary<string, object>
                     {
@@ -183,18 +197,6 @@ namespace Xeora.Web.Directives
                     },
                     Helpers.Context.UniqueId
                 );
-                return;
-            }
-
-            Logging.Information(
-                $"analysed - {directive.GetType().Name}",
-                new Dictionary<string, object>
-                {
-                    { "duration", totalMs },
-                    { "directiveId", analysisOutput }
-                },
-                Helpers.Context.UniqueId
-            );
         }
 
         private static void HandleError(Exception exception, IDirective directive)
@@ -202,14 +204,16 @@ namespace Xeora.Web.Directives
             if (directive.Parent != null)
                 directive.Parent.HasInlineError = true;
 
-            Logging.Error(
-                "Execution Exception...",
-                new Dictionary<string, object>
-                {
-                    { "message", exception.Message },
-                    { "trace", exception.ToString() }
-                }
-            );
+            Logging.Current
+                .Error(
+                    "Execution Exception...",
+                    new Dictionary<string, object>
+                    {
+                        { "message", exception.Message },
+                        { "trace", exception.ToString() }
+                    }
+                )
+                .Flush();
 
             directive.Deliver(RenderStatus.Rendered, Mother.CreateErrorOutput(exception));
         }

@@ -107,13 +107,15 @@ namespace Xeora.Web.Manager.Execution
                 if (e.InnerException != null)
                     e = e.InnerException;
 
-                Logging.Error("Execution Exception...", 
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Logging.Current
+                    .Error("Execution Exception...", 
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
             }
         }
 
@@ -128,13 +130,15 @@ namespace Xeora.Web.Manager.Execution
                 if (e.InnerException != null)
                     e = e.InnerException;
 
-                Logging.Error("Execution Exception...", 
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Logging.Current
+                    .Error("Execution Exception...", 
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
             }
         }
 
@@ -159,14 +163,17 @@ namespace Xeora.Web.Manager.Execution
 
                 try
                 {
-                    domainInstance = 
-                        (DomainExecutable)Activator.CreateInstance(executingDomain, new DomainPacket(this.Name, this._Negotiator));
+                    domainInstance =
+                        (DomainExecutable)Activator.CreateInstance(executingDomain,
+                            new DomainPacket(this.Name, this._Negotiator));
                     this._ExecutableInstances.TryAdd(executingDomain, domainInstance);
-                    
+
                     if (!executingDomain.Name.StartsWith("X") && executingDomain.Name.Length != 33)
                     {
-                        Logging.Information(
-                            $"Initialized Executable: {executingDomain.Name} v{executingDomain.Assembly.GetName().Version}");
+                        Logging.Current
+                            .Information(
+                                $"Initialized Executable: {executingDomain.Name} v{executingDomain.Assembly.GetName().Version}")
+                            .Flush();
                     }
 
                     return domainInstance;
@@ -176,13 +183,15 @@ namespace Xeora.Web.Manager.Execution
                     if (e.InnerException != null)
                         e = e.InnerException;
 
-                    Logging.Error("Execution Exception...", 
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message },
-                            { "trace", e.ToString() }
-                        }
-                    );
+                    Logging.Current
+                        .Error("Execution Exception...",
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message },
+                                { "trace", e.ToString() }
+                            }
+                        )
+                        .Flush();
 
                     exception = new Exception("Xeora Domain executable could not be initialized!", e);
                     return null;
@@ -504,15 +513,17 @@ namespace Xeora.Web.Manager.Execution
             try
             {
                 if (!this._ExecutableInstances.TryRemove(executingDomain, out DomainExecutable domainInstance)) return;
-                
+
                 try
                 {
                     domainInstance.Terminate();
-                    
+
                     if (!executingDomain!.Name.StartsWith("X") && executingDomain.Name.Length != 33)
                     {
-                        Logging.Information(
-                            $"Terminated Executable: {executingDomain.Name} v{executingDomain.Assembly.GetName().Version}");
+                        Logging.Current
+                            .Information(
+                                $"Terminated Executable: {executingDomain.Name} v{executingDomain.Assembly.GetName().Version}")
+                            .Flush();
                     }
                 }
                 catch (Exception e)
@@ -520,13 +531,15 @@ namespace Xeora.Web.Manager.Execution
                     if (e.InnerException != null)
                         e = e.InnerException;
 
-                    Logging.Error("Execution Exception...", 
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message },
-                            { "trace", e.ToString() }
-                        }
-                    );
+                    Logging.Current
+                        .Error("Execution Exception...",
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message },
+                                { "trace", e.ToString() }
+                            }
+                        )
+                        .Flush();
                 }
             }
             finally

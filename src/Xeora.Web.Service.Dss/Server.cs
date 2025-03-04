@@ -45,7 +45,10 @@ namespace Xeora.Web.Service.Dss
                         }
 
                         if (purged == 0) continue;
-                        Basics.Logging.Information($"Purged {purged} client(s)");
+                        
+                        Basics.Logging.Current
+                            .Information($"Purged {purged} client(s)")
+                            .Flush();
                     }
                 }
                 catch 
@@ -89,13 +92,15 @@ namespace Xeora.Web.Service.Dss
                 if (ex.InnerException != null)
                     message = $"{message} ({ex.InnerException.Message})";
 
-                Basics.Logging.Error(
-                    "XeoraDss is FAILED!",
-                    new Dictionary<string, object>
-                    {
-                        { "message", message }
-                    }
-                );
+                Basics.Logging.Current
+                    .Error(
+                        "XeoraDss is FAILED!",
+                        new Dictionary<string, object>
+                        {
+                            { "message", message }
+                        }
+                    )
+                    .Flush();
 
                 return 1;
             }
@@ -130,13 +135,15 @@ namespace Xeora.Web.Service.Dss
                 { /* Just Handle Exception */ }
                 catch (Exception e)
                 {
-                    Basics.Logging.Debug(
-                        "Connection isn't established",
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message }
-                        }
-                    );
+                    Basics.Logging.Current
+                        .Debug(
+                            "Connection isn't established",
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message }
+                            }
+                        )
+                        .Flush();
                 }
             }
         }
@@ -146,7 +153,9 @@ namespace Xeora.Web.Service.Dss
             switch (Basics.Configurations.Xeora.Service.LoggingFormat)
             {
                 case LoggingFormats.Json:
-                    Basics.Logging.Information($"Data Structure Storage Service, v{Server.GetVersionText()}");
+                    Basics.Logging.Current
+                        .Information($"Data Structure Storage Service, v{Server.GetVersionText()}")
+                        .Flush();
                     break;
                 default:
                     Console.WriteLine();
@@ -203,21 +212,24 @@ namespace Xeora.Web.Service.Dss
             {
                 if (args != null) args.Cancel = true;
 
-                Basics.Logging.Information("Terminating XeoraDss...");
-                
+                Basics.Logging.Current
+                    .Information("Terminating XeoraDss...")
+                    .Flush();
+
                 this._TcpListener?.Stop();
-                
+
                 this._ClientCleanupThread.Interrupt();
 
                 // Kill all connections (if any applicable)
-                Basics.Logging.Information("Killing connected clients...");
+                Basics.Logging.Current
+                    .Information("Killing connected clients...")
+                    .Flush();
+                
                 foreach (Guid key in this._Clients.Keys)
                 {
                     this._Clients.TryRemove(key, out TcpClient client);
                     client?.Dispose();
                 }
-
-                Basics.Logging.Flush().Wait();
             }
             finally {
                 this._TerminationLock.ReleaseMutex();

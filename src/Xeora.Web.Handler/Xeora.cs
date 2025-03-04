@@ -509,13 +509,15 @@ namespace Xeora.Web.Handler
             exceptionLogging.AppendLine("-- Error Content --");
             exceptionLogging.Append(exception);
 
-            Logging.Error("Execution Exception...", 
-                new Dictionary<string, object>
-                {
-                    { "message", "Xeora Handler is FAILED!" },
-                    { "trace", exceptionLogging.ToString() }
-                }
-            );
+            Logging.Current
+                .Error("Execution Exception...", 
+                    new Dictionary<string, object>
+                    {
+                        { "message", "Xeora Handler is FAILED!" },
+                        { "trace", exceptionLogging.ToString() }
+                    }
+                )
+                .Flush();
 
             StringBuilder outputStringBuilder =
                 new StringBuilder();

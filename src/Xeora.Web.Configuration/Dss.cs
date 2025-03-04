@@ -47,13 +47,15 @@ namespace Xeora.Web.Configuration
                 }
                 catch (Exception e)
                 {
-                    Basics.Logging.Error(
-                        "Dss EndPoint resolution error!", 
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message }
-                        }
-                    );
+                    Basics.Logging.Current
+                        .Error(
+                            "Dss EndPoint resolution error!", 
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message }
+                            }
+                        )
+                        .Flush();
                 }
 
                 if (!int.TryParse(this._ServiceEndPoint.Split(':')[1], out int servicePort))

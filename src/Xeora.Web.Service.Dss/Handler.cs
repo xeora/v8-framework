@@ -89,14 +89,16 @@ namespace Xeora.Web.Service.Dss
                 if (e is IOException && e.InnerException is SocketException)
                     return;
 
-                Basics.Logging.Error(
-                    "SYSTEM ERROR",
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Basics.Logging.Current
+                    .Error(
+                        "SYSTEM ERROR",
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
             }
             finally
             {

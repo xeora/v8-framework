@@ -209,14 +209,16 @@ namespace Xeora.Web.Directives.Controls.Elements
             {
                 this.RenderError(Basics.ControlResult.Message.Types.Error, e.Message);
 
-                Logging.Error(
-                    "Execution Exception...",
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
+                Logging.Current
+                    .Error(
+                        "Execution Exception...",
+                        new Dictionary<string, object>
+                        {
+                            { "message", e.Message },
+                            { "trace", e.ToString() }
+                        }
+                    )
+                    .Flush();
             }
             finally
             {

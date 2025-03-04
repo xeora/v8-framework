@@ -604,14 +604,16 @@ namespace Xeora.Web.Application
                 }
                 catch (Exception e)
                 {
-                    Basics.Logging.Error(
-                        "Execution Exception...",
-                        new Dictionary<string, object>
-                        {
-                            { "message", e.Message },
-                            { "trace", e.ToString() }
-                        }
-                    );
+                    Basics.Logging.Current
+                        .Error(
+                            "Execution Exception...",
+                            new Dictionary<string, object>
+                            {
+                                { "message", e.Message },
+                                { "trace", e.ToString() }
+                            }
+                        )
+                        .Flush();
                 }
             }
             DomainControl._availableDomains = rDomainInfoCollection;

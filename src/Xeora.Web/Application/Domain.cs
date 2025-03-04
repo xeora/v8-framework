@@ -155,27 +155,29 @@ namespace Xeora.Web.Application
 
             if (totalMs > Basics.Configurations.Xeora.Application.Main.AnalysisThreshold)
             {
-                Basics.Logging.Warning(
+                Basics.Logging.Current
+                    .Warning(
+                        "analysed - parsed duration",
+                        new Dictionary<string, object>
+                        {
+                            { "totalMs", totalMs },
+                            { "total", directives.Count }
+                        },
+                        Basics.Helpers.Context.UniqueId
+                    );
+                return;
+            }
+
+            Basics.Logging.Current
+                .Information(
                     "analysed - parsed duration",
                     new Dictionary<string, object>
                     {
-                        { "totalMs", totalMs },
+                        { "duration", totalMs },
                         { "total", directives.Count }
                     },
                     Basics.Helpers.Context.UniqueId
                 );
-                return;
-            }
-            
-            Basics.Logging.Information(
-                "analysed - parsed duration",
-                new Dictionary<string, object>
-                {
-                    { "duration", totalMs },
-                    { "total", directives.Count }
-                },
-                Basics.Helpers.Context.UniqueId
-            );
         }
 
         private static void OnDeploymentAccessRequest(ref Basics.Domain.IDomain domain, out Deployment.Domain deployment) =>

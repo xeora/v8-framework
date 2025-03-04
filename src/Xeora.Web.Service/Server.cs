@@ -81,40 +81,43 @@ namespace Xeora.Web.Service
                     if (!File.Exists(certPath))
                         throw new Exception("SSL certification file 'server.p12' is missing");
 
-                    this._Certificate = new X509Certificate2(
-                        certPath,
-                        Configuration.Manager.Current.Configuration.Service.CertificatePassword
-                    );
+                    
+                    
+                    this._Certificate = 
+                        X509CertificateLoader.LoadPkcs12FromFile(
+                            certPath,
+                            Configuration.Manager.Current.Configuration.Service.CertificatePassword
+                        );
 
-                    Basics.Logging.Information(
-                        "SSL Certificate Information",
-                        new Dictionary<string, object>
-                        {
-                            { "serial", this._Certificate.GetSerialNumberString() },
-                            { "issuer", this._Certificate.Issuer },
-                            { "subject", this._Certificate.Subject },
-                            { "from", this._Certificate.GetEffectiveDateString() },
-                            { "till", this._Certificate.GetExpirationDateString() },
-                            { "format", this._Certificate.GetFormat() },
-                            { "publicKey", this._Certificate.GetPublicKeyString() }
-                        }
-                    );
-                    Basics.Logging.Flush();
+                    Basics.Logging.Current
+                        .Information(
+                            "SSL Certificate Information",
+                            new Dictionary<string, object>
+                            {
+                                { "serial", this._Certificate.GetSerialNumberString() },
+                                { "issuer", this._Certificate.Issuer },
+                                { "subject", this._Certificate.Subject },
+                                { "from", this._Certificate.GetEffectiveDateString() },
+                                { "till", this._Certificate.GetExpirationDateString() },
+                                { "format", this._Certificate.GetFormat() },
+                                { "publicKey", this._Certificate.GetPublicKeyString() }
+                            }
+                        );
                 }
 
                 this._TcpListener = new TcpListener(serviceIpEndPoint);
                 this._TcpListener.Start(100);
 
-                Basics.Logging.Information(
-                    "XeoraEngine is started!",
-                    new Dictionary<string, object>
-                    {
-                        { "serviceAddress", serviceIpEndPoint.ToString() },
-                        { "ssl", Configuration.Manager.Current.Configuration.Service.Ssl },
-                        { "name", this._Name }
-                    }
-                );
-                Basics.Logging.Flush();
+                Basics.Logging.Current
+                    .Information(
+                        "XeoraEngine is started!",
+                        new Dictionary<string, object>
+                        {
+                            { "serviceAddress", serviceIpEndPoint.ToString() },
+                            { "ssl", Configuration.Manager.Current.Configuration.Service.Ssl },
+                            { "name", this._Name }
+                        }
+                    );
 
                 PoolManager.Initialize(
                     Configuration.Manager.Current.Configuration.Session.Timeout);
@@ -139,17 +142,17 @@ namespace Xeora.Web.Service
 
                     this._SemaphoreSlim = new SemaphoreSlim(maxConnection);
 
-                    Basics.Logging.Information(
-                        $"Maximum simultaneous connection is limited to {maxConnection} with {workerThreads} WorkerThread(s)");
-                    Basics.Logging.Flush();
+                    Basics.Logging.Current
+                        .Information(
+                            $"Maximum simultaneous connection is limited to {maxConnection} with {workerThreads} WorkerThread(s)");
                 }
                 else
                 {
                     Workers.Factory.Init(workerThreads);
 
-                    Basics.Logging.Information(
-                        $"System currently working without any simultaneous connection limit with {workerThreads} WorkerThread(s)");
-                    Basics.Logging.Flush();
+                    Basics.Logging.Current
+                        .Information(
+                            $"System currently working without any simultaneous connection limit with {workerThreads} WorkerThread(s)");
                 }
             }
             catch (Exception ex)
@@ -158,20 +161,20 @@ namespace Xeora.Web.Service
                 if (ex.InnerException != null)
                     message = $"{message} ({ex.InnerException.Message})";
 
-                Basics.Logging.Error(
-                    "XeoraEngine is FAILED!",
-                    new Dictionary<string, object>
-                    {
-                        { "message", message }
-                    }
-                );
-                Basics.Logging.Flush();
+                Basics.Logging.Current
+                    .Error(
+                        "XeoraEngine is FAILED!",
+                        new Dictionary<string, object>
+                        {
+                            { "message", message }
+                        }
+                    );
 
                 return 1;
             }
             finally
             {
-                Basics.Logging.Flush();
+                _ = Basics.Logging.Current.Flush();
             }
 
             await this.ListenAsync();
@@ -208,10 +211,12 @@ namespace Xeora.Web.Service
                 { /* Just Handle Exception */ }
                 catch (Exception ex)
                 {
-                    Basics.Logging.Debug(
-                        "Connection isn't established",
-                        new Dictionary<string, object> { { "message", ex.Message } }
-                    );
+                    Basics.Logging.Current
+                        .Debug(
+                            "Connection isn't established",
+                            new Dictionary<string, object> { { "message", ex.Message } }
+                        )
+                        .Flush();
                 }
             }
         }
@@ -221,7 +226,9 @@ namespace Xeora.Web.Service
             switch (Configuration.Manager.Current.Configuration.Service.LoggingFormat)
             {
                 case LoggingFormats.Json:
-                    Basics.Logging.Information($"Web Development Framework, v{Server.GetVersionText()}");
+                    Basics.Logging.Current
+                        .Information($"Web Development Framework, v{Server.GetVersionText()}")
+                        .Flush();
                     break;
                 default:
                     Console.WriteLine();
@@ -278,7 +285,9 @@ namespace Xeora.Web.Service
             {
                 if (args != null) args.Cancel = true;
 
-                Basics.Logging.Information("Terminating XeoraEngine...");
+                Basics.Logging.Current
+                    .Information("Terminating XeoraEngine...")
+                    .Flush();
                 
                 this._TcpListener?.Stop();
 
@@ -286,8 +295,6 @@ namespace Xeora.Web.Service
                 
                 // Terminate Loaded Domains
                 Manager.Execution.ApplicationFactory.Terminate();
-                
-                Basics.Logging.Flush().Wait();
             }
             finally {
                 this._TerminationLock.ReleaseMutex();
