@@ -2,7 +2,6 @@
 
 namespace Xeora.Web.Basics.ControlResult
 {
-    [Serializable]
     public class ObjectFeed : IDataSource
     {
         private readonly object[] _Objects;

@@ -14,21 +14,27 @@ namespace Xeora.Web.Service.Session
 
         public object this[string key]
         {
-            get => this._Reservation.Get(key);
-            set => this._Reservation.Set(key, value);
+            get => Basics.Serialization.Deserializer.Deserialize(this._Reservation.Get(key));
+            set => this._Reservation.Set(key, Basics.Serialization.Serializer.Serialize(value));
         }
 
         public object Lock(string key, Func<string, object, object> lockHandler)
         {
             string lockCode = 
                 this._Reservation.Lock(key);
-        
-            object value = 
-                this._Reservation.Get(key);
-            value = lockHandler?.Invoke(key, value);
 
-            this._Reservation.Set(key, value, lockCode);
-            this._Reservation.Release(key, lockCode);
+            object value;
+            try
+            {
+                value = this[key];
+                value = lockHandler?.Invoke(key, value);
+
+                this._Reservation.Set(key, Basics.Serialization.Serializer.Serialize(value), lockCode);
+            }
+            finally
+            {
+                this._Reservation.Release(key, lockCode);    
+            }
             
             return value;
         }

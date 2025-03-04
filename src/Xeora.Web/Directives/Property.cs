@@ -65,7 +65,7 @@ namespace Xeora.Web.Directives
                             // DataTable Field
                             return this.RenderDataItem();
                         case '*':
-                            // Search in All orderby : [InData, DataField, Session, Application, Form Post, QueryString, Cookie] (DOES NOT SUPPORT FILE POSTS)
+                            // Search in All order by : [InData, DataField, Session, Application, Form Post, QueryString, Cookie] (DOES NOT SUPPORT FILE POSTS)
                             string searchArgKey = 
                                 this._RawValue.Substring(1);
 
@@ -74,7 +74,7 @@ namespace Xeora.Web.Directives
 
                             // Search In VariablePool
                             if (searchArgValue == null)
-                                searchArgValue = Helpers.VariablePool.Get(searchArgKey);
+                                searchArgValue = Helpers.VariablePool.Get<object>(searchArgKey);
 
                             // Search In Session
                             if (searchArgValue == null)
@@ -120,7 +120,7 @@ namespace Xeora.Web.Directives
         }
 
         private static Tuple<bool, object> RenderPageRenderDuration() => 
-            new Tuple<bool, object>(true, "<!--_sys_PAGERENDERDURATION-->");
+            new (true, "<!--_sys_PAGERENDERDURATION-->");
 
         private Tuple<bool, object> RenderQueryString()
         {
@@ -230,7 +230,7 @@ namespace Xeora.Web.Directives
         }
 
         private Tuple<bool, object> RenderVariablePoolItem() => 
-            new Tuple<bool, object>(true, Helpers.VariablePool.Get(this._RawValue));
+            new (true, Helpers.VariablePool.Get<object>(this._RawValue));
 
         private Tuple<bool, object> RenderObjectItem()
         {
@@ -277,9 +277,7 @@ namespace Xeora.Web.Directives
 
                     break;
                 default:
-                    objectItem = Helpers.VariablePool.Get(objectItemKey);
-
-                    if (objectItem == null) break;
+                    objectItem = Helpers.VariablePool.Get<DataListOutputInfo>(objectItemKey);
 
                     if (objectItem is DataListOutputInfo outputInfo)
                     {

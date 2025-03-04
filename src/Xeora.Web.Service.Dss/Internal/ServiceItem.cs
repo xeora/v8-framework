@@ -7,12 +7,12 @@ namespace Xeora.Web.Service.Dss.Internal
 {
     internal class ServiceItem
     {
-        private object _Value;
-        
-        private readonly object _Lock = new object();
+        private byte[] _Value;
+
+        private readonly object _Lock = new();
         private readonly Queue<string> _LockQueue;
 
-        public ServiceItem(string key, object initialValue = null, string initialLockCode = null)
+        public ServiceItem(string key, byte[] initialValue = null, string initialLockCode = null)
         {
             this.Key = key;
             this._Value = initialValue;
@@ -25,9 +25,9 @@ namespace Xeora.Web.Service.Dss.Internal
         
         public string Key { get; }
 
-        public object Get() => this._Value;
+        public byte[] Get() => this._Value;
 
-        public void Set(object value, string lockCode = null)
+        public void Set(byte[] value, string lockCode = null)
         {
             lock (this._Lock)
             {

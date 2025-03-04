@@ -1,8 +1,5 @@
 ﻿using System;
-using System.IO;
 using System.Reflection;
-using System.Collections.Generic;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -10,13 +7,11 @@ namespace Xeora.Web.Basics.Service
 {
     public sealed class VariablePoolOperation
     {
-        private static readonly object Lock = new object();
+        private static readonly object Lock = new();
 
-        private readonly string _SessionId;
-        private readonly string _KeyId;
         private readonly string _SessionKeyId;
         private readonly IVariablePool _VariablePool;
-
+        
         public VariablePoolOperation(string sessionId, string keyId)
         {
             Monitor.Enter(VariablePoolOperation.Lock);
@@ -34,32 +29,28 @@ namespace Xeora.Web.Basics.Service
                 Monitor.Exit(VariablePoolOperation.Lock);
             }
 
-            this._SessionId = sessionId;
-            this._KeyId = keyId;
             this._SessionKeyId = $"{sessionId}_{keyId}";
         }
-
-        public void Set(string name, object value)
-        {
-            if (!string.IsNullOrWhiteSpace(name) && name.Length > 128)
-                throw new ArgumentOutOfRangeException(nameof(name), "Key must not be longer than 128 characters!");
-
-            if (value == null)
-            {
-                this.UnRegisterVariableFromPool(name);
-
-                return;
-            }
-
+        
+        public void Set(string name, string value) =>
             this.RegisterVariableToPool(name, value);
-        }
+        
+        public void Set(string name, string[] value) =>
+            this.RegisterVariableToPool(name, value);
+        
+        public void Set(string name, ISerializablePoolValue value) =>
+            this.RegisterVariableToPool(name, value);
 
-        public object Get(string name) =>
-            this.GetVariableFromPool(name);
+        public void Set<T>(string name, T value) where T : struct =>
+            this.RegisterVariableToPool(name, value);
+        
+        public void Set<T>(string name, T[] values) where T : struct =>
+            this.RegisterVariableToPool(name, values);
 
         public T Get<T>(string name)
         {
-            object objectValue = this.Get(name);
+            object objectValue = 
+                this.GetVariableFromPool(name);
 
             if (objectValue is T value)
                 return value;
@@ -69,8 +60,7 @@ namespace Xeora.Web.Basics.Service
 
         /*public void Transfer(string fromSessionId) =>
             this.TransferRegistrations($"{fromSessionId}_{this._KeyId}");*/
-
-        [Obsolete("Obsolete")]
+        
         private object GetVariableFromPool(string name)
         {
             object rObject = 
@@ -81,76 +71,28 @@ namespace Xeora.Web.Basics.Service
             byte[] serializedValue = 
                 this._VariablePool.Get(name);
 
-            if (serializedValue == null) return null;
+            if (serializedValue == null || serializedValue.Length < 5) return null;
             
-            Stream forStream = null;
-            try
-            {
-                BinaryFormatter binFormatter = 
-                    new BinaryFormatter {Binder = new OverrideBinder()};
-
-                forStream = new MemoryStream(serializedValue);
-
-                rObject = binFormatter.Deserialize(forStream);
-
-                VariablePoolPreCache.CacheVariable(this._SessionKeyId, name, rObject);
-
-                return rObject;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-            finally
-            {
-                forStream?.Dispose();
-            }
+            return Serialization.Deserializer.Deserialize(serializedValue);
         }
-
-        [Obsolete("Obsolete")]
+        
         private void RegisterVariableToPool(string name, object value)
         {
+            if (!string.IsNullOrWhiteSpace(name) && name.Length > 128)
+                throw new ArgumentOutOfRangeException(nameof(name), "Key must not be longer than 128 characters!");
+
             VariablePoolPreCache.CleanCachedVariables(this._SessionKeyId, name);
 
-            byte[] serializedValue;
-            Stream forStream = null;
-            try
+            if (value == null)
             {
-                forStream = new MemoryStream();
+                this._VariablePool.Set(name, null);
+                return;
+            }
 
-                BinaryFormatter binFormatter = new BinaryFormatter();
-                binFormatter.Serialize(forStream, value);
-
-                serializedValue = ((MemoryStream)forStream).ToArray();
-            }
-            catch (Exception e)
-            {
-                Logging.Error(
-                    "VP Serializer Exception...",
-                    new Dictionary<string, object>
-                    {
-                        { "message", e.Message },
-                        { "trace", e.ToString() }
-                    }
-                );
-                
-                serializedValue = new byte[] { };
-            }
-            finally
-            {
-                forStream?.Dispose();
-            }
+            byte[] serializedValue =
+                Serialization.Serializer.Serialize(value);
 
             this._VariablePool.Set(name, serializedValue);
-        }
-
-        private void UnRegisterVariableFromPool(string name)
-        {
-            VariablePoolPreCache.CleanCachedVariables(this._SessionKeyId, name);
-
-            // Unregister Variable From Pool Immediately. 
-            // Otherwise it will cause cache reload in the same domain call
-            this._VariablePool.Set(name, null);
         }
 
         /*private void TransferRegistrations(string fromSessionId)
@@ -164,70 +106,14 @@ namespace Xeora.Web.Basics.Service
                 throw new TargetInvocationException("Communication Error! Variable Pool is not accessible...", ex);
             }
         }*/
-
-        [Obsolete("Obsolete")]
-        private byte[] SerializeNameValuePairs(ConcurrentDictionary<string, object> nameValuePairs)
-        {
-            if (nameValuePairs == null)
-                return new byte[] { };
-
-            SerializableDictionary serializableDictionary = new SerializableDictionary();
-
-            Stream forStream;
-            foreach (string variableName in nameValuePairs.Keys)
-            {
-                forStream = null;
-                try
-                {
-                    if (nameValuePairs.TryGetValue(variableName, out object variableValue))
-                    {
-                        forStream = new MemoryStream();
-
-                        BinaryFormatter binFormatter = new BinaryFormatter();
-                        binFormatter.Serialize(forStream, variableValue);
-
-                        byte[] serializedValue = ((MemoryStream)forStream).ToArray();
-
-                        serializableDictionary.Add(new SerializableDictionary.SerializableKeyValuePair(variableName, serializedValue));
-                    }
-                }
-                catch (Exception)
-                {
-                    // Just Handle Exceptions
-                }
-                finally
-                {
-                    forStream?.Dispose();
-                }
-            }
-
-            forStream = null;
-            try
-            {
-                forStream = new MemoryStream();
-
-                BinaryFormatter binFormatter = new BinaryFormatter();
-                binFormatter.Serialize(forStream, serializableDictionary);
-
-                return ((MemoryStream)forStream).ToArray();
-            }
-            catch (Exception)
-            {
-                return new byte[] { };
-            }
-            finally
-            {
-                forStream?.Dispose();
-            }
-        }
-
+        
         // This class required to eliminate the mass request to VariablePool.
         // VariablePool registration requires serialization...
         // Use PreCache for only read keys do not use for variable registration!
         // It is suitable for repeating requests...
         private static class VariablePoolPreCache
         {
-            private static readonly object Lock = new object();
+            private static readonly object Lock = new();
             private static ConcurrentDictionary<string, ConcurrentDictionary<string, object>> _variablePreCache;
             private static ConcurrentDictionary<string, ConcurrentDictionary<string, object>> VariablePreCache
             {
@@ -278,23 +164,6 @@ namespace Xeora.Web.Basics.Service
             {
                 if (VariablePoolPreCache.VariablePreCache.TryGetValue(sessionKeyId, out ConcurrentDictionary<string, object> nameValuePairs))
                     nameValuePairs.TryRemove(name, out _);
-            }
-        }
-
-        [Serializable]
-        public class SerializableDictionary : List<SerializableDictionary.SerializableKeyValuePair>
-        {
-            [Serializable]
-            public class SerializableKeyValuePair
-            {
-                public SerializableKeyValuePair(string name, byte[] value)
-                {
-                    this.Name = name;
-                    this.Value = value;
-                }
-
-                public string Name { get; }
-                public byte[] Value { get; }
             }
         }
     }

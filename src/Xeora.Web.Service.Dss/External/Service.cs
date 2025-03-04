@@ -24,7 +24,7 @@ namespace Xeora.Web.Service.Dss.External
         public bool Reusing { get; }
         public DateTime Expires { get; }
 
-        public object Get(string key)
+        public byte[] Get(string key)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentNullException(nameof(key));
@@ -32,7 +32,7 @@ namespace Xeora.Web.Service.Dss.External
             return this._Get(key);
         }
         
-        public void Set(string key, object value, string lockCode = null)
+        public void Set(string key, byte[] value, string lockCode = null)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentNullException(nameof(key));
@@ -57,7 +57,7 @@ namespace Xeora.Web.Service.Dss.External
         public void Release(string key, string lockCode) => this._Release(key, lockCode);
         public string[] Keys => this.GetKeys();
 
-        private object _Get(string key)
+        private byte[] _Get(string key)
         {
             long requestId;
 
@@ -128,7 +128,7 @@ namespace Xeora.Web.Service.Dss.External
                         if (string.CompareOrdinal(remoteKey, key) != 0)
                             throw new DssCommandException();
                         
-                        return Tools.Serialization.Binary.DeSerialize(remoteValueBytes);
+                        return remoteValueBytes;
                     default:
                         throw new DssCommandException();
                 }
@@ -140,7 +140,7 @@ namespace Xeora.Web.Service.Dss.External
             }
         }
 
-        private void _Set(string key, object value, string lockCode)
+        private void _Set(string key, byte[] value, string lockCode)
         {
             if (string.IsNullOrEmpty(lockCode))
                 lockCode = string.Empty;
@@ -159,8 +159,8 @@ namespace Xeora.Web.Service.Dss.External
                  */
 
                 byte[] valueBytes = 
-                    Tools.Serialization.Binary.Serialize(value) ?? Array.Empty<byte>();
-                if (valueBytes.Length > 16777000)
+                    value ?? Array.Empty<byte>();
+                if (valueBytes.Length > Basics.Serialization.Serializer.MAX_BYTE_SIZE)
                     throw new OverflowException("Value is too big to store");
 
                 binaryWriter.Write("SET".ToCharArray());

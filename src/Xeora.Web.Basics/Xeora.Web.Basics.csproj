@@ -50,10 +50,6 @@
     <Folder Include="Domain\Control\Definitions\" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="9.0.2" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>

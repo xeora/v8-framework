@@ -47,6 +47,5 @@
   
   <ItemGroup>
     <ProjectReference Include="..\Xeora.Web.Basics\Xeora.Web.Basics.csproj" />
-    <ProjectReference Include="..\Xeora.Web.Tools\Xeora.Web.Tools.csproj" />
   </ItemGroup>
 </Project>

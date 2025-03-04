@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 namespace Xeora.Web.Basics.ControlResult
 {
-    [Serializable]
     public class VariableBlock : IEnumerable<KeyValuePair<string, object>>
     {
         private readonly ConcurrentDictionary<string, object> _Items;
@@ -16,7 +15,7 @@ namespace Xeora.Web.Basics.ControlResult
         public Message Message { get; set; }
 
         public void Add(string key, object value) =>
-            this._Items.AddOrUpdate(key, value, (k, v) => value);
+            this._Items.AddOrUpdate(key, value, (_, _) => value);
 
         public object this[string key]
         {

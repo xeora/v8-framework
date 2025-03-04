@@ -8,8 +8,8 @@ namespace Xeora.Web.Basics.Dss
         bool Reusing { get; }
         DateTime Expires { get; }
         string[] Keys { get; }
-        object Get(string key);
-        void Set(string key, object value, string lockCode = null);
+        byte[] Get(string key);
+        void Set(string key, byte[] value, string lockCode = null);
         string Lock(string key);
         void Release(string key, string lockCode);
     }

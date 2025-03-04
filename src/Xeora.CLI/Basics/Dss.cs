@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using Xeora.Web.Basics.Configuration;
 using Xeora.Web.Service.Dss;
 
 namespace Xeora.CLI.Basics
@@ -10,11 +12,20 @@ namespace Xeora.CLI.Basics
     {
         private IPAddress _IpAddress;
         private short _Port;
+        private bool _Quite;
+        private LoggingFormats _LoggingFormats;
+        private LoggingTypes _LoggingLevel;
+        
+        private static readonly Newtonsoft.Json.JsonSerializer _JsonSerializer =
+            Newtonsoft.Json.JsonSerializer.CreateDefault();
 
         public Dss()
         {
             this._IpAddress = IPAddress.Parse("127.0.0.1");
             this._Port = 5531;
+            this._Quite = false;
+            this._LoggingFormats = LoggingFormats.Plain;
+            this._LoggingLevel = LoggingTypes.Info;
         }
 
         public void PrintUsage()
@@ -26,6 +37,10 @@ namespace Xeora.CLI.Basics
             Console.WriteLine("   -h, --help                  print this screen");
             Console.WriteLine("   -i, --ip IPADDRESS          ip address to listen (Default: 127.0.0.1)");
             Console.WriteLine("   -p, --port PORTNUMBER       port number to listen (Default: 5531)");
+            Console.WriteLine("   -q, --quite                 deactivate logging");
+            Console.WriteLine("   -f, --format [plain|json]   logging format (Default: plain)");
+            Console.WriteLine("   -l, --level                 logging format (Default: info)");
+            Console.WriteLine("             available values: debug|info|warn|error");
             Console.WriteLine();
         }
 
@@ -33,6 +48,9 @@ namespace Xeora.CLI.Basics
         {
             IPAddress ipAddress = null;
             short port = 0;
+            bool quite = false;
+            LoggingFormats format = LoggingFormats.Plain;
+            LoggingTypes level = LoggingTypes.Info;
             
             for (int aC = 0; aC < args.Count; aC++)
             {
@@ -82,6 +100,52 @@ namespace Xeora.CLI.Basics
                         aC++;
 
                         break;
+                    case "-q":
+                    case "--quite":
+                        quite = true;
+                        aC++;
+
+                        break;
+                    case "-f":
+                    case "--format":
+                        if (!Common.CheckArgument(args, aC))
+                        {
+                            this.PrintUsage();
+                            Console.WriteLine("format should be specified");
+                            Console.WriteLine();
+                            return 2;
+                        }
+                        
+                        if (!Enum.TryParse(args[aC+1], true, out format))
+                        {
+                            this.PrintUsage();
+                            Console.WriteLine("unrecognizable format. available values: plain|json");
+                            Console.WriteLine();
+                            return 2;
+                        }
+                        aC++;
+
+                        break;
+                    case "-l":
+                    case "--level":
+                        if (!Common.CheckArgument(args, aC))
+                        {
+                            this.PrintUsage();
+                            Console.WriteLine("level should be specified");
+                            Console.WriteLine();
+                            return 2;
+                        }
+                        
+                        if (!Enum.TryParse(args[aC+1], true, out level))
+                        {
+                            this.PrintUsage();
+                            Console.WriteLine("unrecognizable level. available values: debug|info|warn|error");
+                            Console.WriteLine();
+                            return 2;
+                        }
+                        aC++;
+
+                        break;
                     default:
                         if (aC + 1 < args.Count)
                         {
@@ -99,6 +163,10 @@ namespace Xeora.CLI.Basics
                 this._IpAddress = ipAddress;
             if (port > 0)
                 this._Port = port;
+
+            this._Quite = quite;
+            this._LoggingFormats = format;
+            this._LoggingLevel = level;
             
             return 0;
         }
@@ -112,7 +180,7 @@ namespace Xeora.CLI.Basics
             try
             {
                 Server server = 
-                    new Server(new IPEndPoint(this._IpAddress, this._Port));
+                    new Server(this.CreateConfigurationFile());
                 return await server.StartAsync();
             }
             catch (Exception e)
@@ -120,6 +188,41 @@ namespace Xeora.CLI.Basics
                 Console.WriteLine($"XeoraDss execution problem: {e.Message}");
                 return 1;
             }
+        }
+        
+        private string CreateConfigurationFile()
+        {
+            Dictionary<string, object> configurationContent = 
+                new Dictionary<string, object>
+                {
+                    ["service"] = new Dictionary<string, object>
+                    {
+                        { "address", this._IpAddress.ToString() },
+                        { "port", this._Port },
+                        { "logging", !this._Quite },
+                        { "loggingFormat", this._LoggingFormats.ToString().ToLowerInvariant() },
+                        { "loggingLevel", this._LoggingLevel.ToString().ToLowerInvariant() }
+                    }
+                };
+
+            string filePath = 
+                Path.GetTempFileName();
+            
+            StreamWriter sW = null;
+            Newtonsoft.Json.JsonTextWriter jsonWriter = null;
+            try
+            {
+                sW = new StreamWriter(filePath);
+                jsonWriter = new Newtonsoft.Json.JsonTextWriter(sW);
+                Dss._JsonSerializer.Serialize(jsonWriter, configurationContent);
+            }
+            finally
+            {
+                sW?.Close();
+                jsonWriter?.Close();
+            }
+            
+            return filePath;
         }
     }
 }

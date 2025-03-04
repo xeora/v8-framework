@@ -22,7 +22,7 @@ namespace Xeora.Web.Service.VariablePool
             this._Reservation.Set(name, serializedValue);
 
         public byte[] Get(string name) =>
-            (byte[])this._Reservation.Get(name);
+            this._Reservation.Get(name);
 
         public void CopyInto(ref Basics.Service.IVariablePool variablePool)
         {

@@ -36,7 +36,7 @@ namespace Xeora.Web.Service.Dss.Internal
             }
         }
         
-        public object Get(string key)
+        public byte[] Get(string key)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentNullException(nameof(key));
@@ -47,7 +47,7 @@ namespace Xeora.Web.Service.Dss.Internal
             }
         }
 
-        public void Set(string key, object value, string lockCode = null)
+        public void Set(string key, byte[] value, string lockCode = null)
         {
             if (string.IsNullOrEmpty(key))
                 throw new ArgumentNullException(nameof(key));
