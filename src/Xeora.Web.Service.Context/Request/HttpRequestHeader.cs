@@ -169,7 +169,7 @@ namespace Xeora.Web.Service.Context.Request
 
                     byte[] residualData = new byte[content.Length - eofIndex];
                     contentStream.Seek(eofIndex, SeekOrigin.Begin);
-                    contentStream.Read(residualData, 0, residualData.Length);
+                    contentStream.ReadExactly(residualData, 0, residualData.Length);
 
                     this._StreamEnclosure.Return(residualData, 0, residualData.Length);
 

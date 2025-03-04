@@ -45,7 +45,7 @@ namespace Xeora.Web.Deployment
             {
                 passwordStream = 
                     new FileStream(domainPasswordFileLocation, FileMode.Open, FileAccess.Read);
-                passwordStream.Read(securedHash, 0, securedHash.Length);
+                passwordStream.ReadExactly(securedHash, 0, securedHash.Length);
             }
             catch (Exception)
             {
@@ -161,7 +161,7 @@ namespace Xeora.Web.Deployment
                     new FileStream(this._DomainFileLocation, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 domainFileStream.Seek(index, SeekOrigin.Begin);
-                domainFileStream.Read(buffer, 0, buffer.Length);
+                domainFileStream.ReadExactly(buffer, 0, buffer.Length);
 
                 // FILE PROTECTION
                 if (this._PasswordHash != null)
@@ -188,9 +188,9 @@ namespace Xeora.Web.Deployment
                 byte[] cacheBytes = new byte[total];
 
                 outputStream.Seek(0, SeekOrigin.Begin);
-                outputStream.Read(cacheBytes, 0, cacheBytes.Length);
+                outputStream.ReadExactly(cacheBytes, 0, cacheBytes.Length);
 
-                this._DomainFileEntryBytesCache.AddOrUpdate(searchKey, cacheBytes, (cKey, cValue) => cacheBytes);
+                this._DomainFileEntryBytesCache.AddOrUpdate(searchKey, cacheBytes, (_, _) => cacheBytes);
                 // !---
 
                 outputStream.Seek(0, SeekOrigin.Begin);
