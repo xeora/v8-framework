@@ -11,8 +11,7 @@ namespace Xeora.Web.Basics
 {
     public class Logging
     {
-        private readonly object _MessageLock = new();
-        private readonly Dictionary<string, Queue<Message>> _MessageGroups;
+        private readonly ConcurrentDictionary<string, ConcurrentQueue<Message>> _MessageGroups;
         private readonly object _FlushingLock = new();
         private readonly ConcurrentDictionary<string, bool> _Flushing;
 
@@ -36,7 +35,7 @@ namespace Xeora.Web.Basics
         
         private Logging()
         {
-            this._MessageGroups = new Dictionary<string, Queue<Message>>();
+            this._MessageGroups = new ConcurrentDictionary<string, ConcurrentQueue<Message>>();
             this._Flushing = new ConcurrentDictionary<string, bool>();
         }
 
@@ -45,13 +44,14 @@ namespace Xeora.Web.Basics
             if (string.IsNullOrEmpty(groupId)) 
                 groupId = Guid.Empty.ToString();
 
-            lock (this._MessageLock)
-            {
-                if (!this._MessageGroups.ContainsKey(groupId))
-                    this._MessageGroups[groupId] = new Queue<Message>();
-                
-                this._MessageGroups[groupId].Enqueue(message);
-            }
+            this._MessageGroups.AddOrUpdate(
+                groupId,
+                new ConcurrentQueue<Message>(new[] { message }),
+                (_, queue) =>
+                {
+                    queue.Enqueue(message);
+                    return queue;
+                });
         }
 
         private void _Flush(string groupId = null)
@@ -66,31 +66,22 @@ namespace Xeora.Web.Basics
             Monitor.Enter(this._FlushingLock);
             try
             {
-                Queue<Message> messages;
+                if (!this._MessageGroups.TryRemove(groupId, out ConcurrentQueue<Message> messages))
+                    return;
 
-                lock (this._MessageLock)
-                {
-                    if (!this._MessageGroups.ContainsKey(groupId))
-                        return;
-
-                    messages = this._MessageGroups[groupId];
-
-                    this._MessageGroups.Remove(groupId);
-                }
-
-                while (messages.Count > 0)
-                {
-                    Message message =
-                        messages.Dequeue();
+                while (messages.TryDequeue(out Message message))
                     Logging.WriteLine(message);
-                }
 
                 if (string.CompareOrdinal(groupId, Guid.Empty.ToString()) == 0) return;
                 
                 string separator =
                     "".PadRight(30, '-');
                 Message separatorMessage =
-                    Message.Create(LoggingTypes.Info, $"{DateTime.UtcNow:MM/dd/yyyy HH:mm:ss.fff} ----- {separator} {separator}");
+                    Configurations.Xeora.Service.LoggingFormat switch
+                    {
+                        LoggingFormats.Json => this.FormatJson(LoggingTypes.Info, separator),
+                        _ => this.FormatPlain(LoggingTypes.Info, separator)
+                    };
                 Logging.WriteLine(separatorMessage);
             }
             finally
@@ -277,14 +268,17 @@ namespace Xeora.Web.Basics
             if (!Configurations.Xeora.Service.Logging) return Logging.Current;
             if (!MatchLoggingLevel(type)) return Logging.Current;
 
-            return Configurations.Xeora.Service.LoggingFormat switch
-            {
-                LoggingFormats.Json => this.PrintJson(type, message, fields, groupId),
-                _ => this.PrintPlain(type, message, fields, groupId)
-            };
+            return this.Print(
+                Configurations.Xeora.Service.LoggingFormat switch
+                {
+                    LoggingFormats.Json => this.FormatJson(type, message, fields),
+                    _ => this.FormatPlain(type, message, fields)
+                },
+                groupId
+            );
         }
-        
-        private Logging PrintPlain(LoggingTypes type, string message, Dictionary<string, object> fields = null, string groupId = null)
+
+        private Message FormatPlain(LoggingTypes type, string message, Dictionary<string, object> fields = null)
         {
             string typePointer = 
                 type.ToString().ToUpperInvariant().PadRight(5, ' ');
@@ -296,13 +290,10 @@ namespace Xeora.Web.Basics
                 foreach (var (key, value) in fields)
                     consoleMessage = $"{consoleMessage}, {key}={value}";
 
-            this.Queue(
-                Message.Create(type, consoleMessage), groupId);
-
-            return this;
+            return Message.Create(type, consoleMessage);
         }
-        
-        private Logging PrintJson(LoggingTypes type, string message, Dictionary<string, object> fields, string groupId = null)
+
+        private Message FormatJson(LoggingTypes type, string message, Dictionary<string, object> fields = null)
         {
             Dictionary<string, object> jsonObject = new Dictionary<string, object>
             {
@@ -320,13 +311,15 @@ namespace Xeora.Web.Basics
 
             string consoleMessage =
                 SerializeToJson(jsonObject);
-            
-            this.Queue(
-                Message.Create(type, consoleMessage), groupId);
-            
+
+            return Message.Create(type, consoleMessage);
+        }
+        
+        private Logging Print(Message message, string groupId = null)
+        {
+            this.Queue(message, groupId);
             return this;
         }
-
 
         private static string SerializeToJson(object value)
         {
