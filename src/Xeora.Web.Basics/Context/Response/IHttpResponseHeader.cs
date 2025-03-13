@@ -4,6 +4,7 @@
     {
         void AddOrUpdate(string key, string value);
 
+        bool KeepAlive { get; set; }
         IHttpResponseStatus Status { get; }
         IHttpCookie Cookie { get; }
     }

@@ -27,7 +27,6 @@ namespace Xeora.Web.Service.Context
 
         private readonly string _TempLocation;
         private readonly Stream _ResponseOutput;
-        private readonly bool _KeepAlive;
         private readonly Action<Basics.Context.Response.IHttpResponseHeader> _ServerResponseStampHandler;
 
         private bool _HeaderFlushed;
@@ -49,11 +48,11 @@ namespace Xeora.Web.Service.Context
 
             this._ResponseOutput = 
                 new FileStream(this._TempLocation, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
-
-            this._KeepAlive = keepAlive;
+            
             this._ServerResponseStampHandler = serverResponseStampHandler;
 
             this.Header = new HttpResponseHeader();
+            this.Header.KeepAlive = keepAlive;
         }
         
         public Basics.Context.Response.IHttpResponseHeader Header { get; }
@@ -77,8 +76,8 @@ namespace Xeora.Web.Service.Context
             else if (string.IsNullOrWhiteSpace(this.Header[HEADER_CONTENT_LENGTH]))
                 this.Header.AddOrUpdate(HEADER_CONTENT_LENGTH, this._ResponseOutput.Length.ToString());
 
-            this.Header.AddOrUpdate(HEADER_CONNECTION, this._KeepAlive ? "keep-alive" : "close");
-            if (this._KeepAlive)
+            this.Header.AddOrUpdate(HEADER_CONNECTION, this.Header.KeepAlive ? "keep-alive" : "close");
+            if (this.Header.KeepAlive)
                 this.Header.AddOrUpdate(HEADER_KEEP_ALIVE, $"timeout={streamEnclosure.ReadTimeout / 1000}");
 
             this._ServerResponseStampHandler(this.Header);
@@ -194,7 +193,7 @@ namespace Xeora.Web.Service.Context
             this._ResponseOutput.Seek(0, SeekOrigin.Begin);
             this._ResponseOutput.CopyTo(streamEnclosure);
             
-            streamEnclosure.KeepAlive = this._KeepAlive;
+            streamEnclosure.KeepAlive = this.Header.KeepAlive;
         }
 
         internal void Dispose()

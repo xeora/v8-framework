@@ -11,6 +11,7 @@
         public new void AddOrUpdate(string key, string value) =>
             base.AddOrUpdate(key, value);
 
+        public bool KeepAlive { get; set; }
         public Basics.Context.Response.IHttpResponseStatus Status { get; }
         public Basics.Context.IHttpCookie Cookie { get; }
     }
