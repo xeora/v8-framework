@@ -21,7 +21,7 @@ namespace Xeora.Web.Service
             this._Certificate = certificate;
         }
 
-        public void Process()
+        public void Process(string connectionId)
         {
             if (this.ProceedStream(out Stream remoteStream))
             {
@@ -31,7 +31,7 @@ namespace Xeora.Web.Service
                 Net.NetworkStream streamEnclosure = 
                     new Net.NetworkStream(ref remoteStream);
                 
-                this.Handle(ref streamEnclosure);
+                this.Handle(connectionId, ref streamEnclosure);
             }
 
             remoteStream.Close();
@@ -93,7 +93,7 @@ namespace Xeora.Web.Service
             }
         }
 
-        private void Handle(ref Net.NetworkStream remoteStream)
+        private void Handle(string connectionId, ref Net.NetworkStream remoteStream)
         {
             Basics.Logging.Current
                 .Debug(
@@ -105,7 +105,7 @@ namespace Xeora.Web.Service
                     }
                 )
                 .Flush();
-            ClientState.Handle(this._RemoteIpEndPoint.Address, remoteStream);
+            ClientState.Handle(connectionId, this._RemoteIpEndPoint.Address, remoteStream);
         }
     }
 }

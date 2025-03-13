@@ -15,12 +15,12 @@ namespace Xeora.Web.Service
 {
     public static class ClientState
     {
-        public static void Handle(IPAddress remoteAddress, NetworkStream streamEnclosure)
+        public static void Handle(string connectionId, IPAddress remoteAddress, NetworkStream streamEnclosure)
         {
             do
             {
-                string stateId = Guid.NewGuid().ToString();
-
+                string contextId = Guid.NewGuid().ToString();
+                
                 Basics.Context.IHttpContext context = null;
                 IHandler xeoraHandler = null;
                 try
@@ -29,7 +29,7 @@ namespace Xeora.Web.Service
                     
                     Basics.Context.IHttpRequest request = new HttpRequest(remoteAddress);
 
-                    switch (((HttpRequest) request).Build(stateId, streamEnclosure))
+                    switch (((HttpRequest) request).Build(contextId, streamEnclosure))
                     {
                         case ParserResultTypes.Timeout:
                             return;
@@ -64,7 +64,7 @@ namespace Xeora.Web.Service
                         }
                         
                         ClientState.HandleWebSocketRequest(
-                            stateId,
+                            contextId,
                             webSocketRequest,
                             streamEnclosure,
                             out xeoraHandler);
@@ -73,7 +73,8 @@ namespace Xeora.Web.Service
                     }
 
                     ClientState.HandleHttpRequest(
-                        stateId, 
+                        connectionId,
+                        contextId, 
                         wholeProcessBegins, 
                         request,
                         streamEnclosure,
@@ -112,13 +113,14 @@ namespace Xeora.Web.Service
                     else
                         context?.Dispose();
 
-                    Logging.Current.Flush(stateId);
+                    Logging.Current.Flush(contextId);
                 }
             } while (streamEnclosure.Alive());
         }
 
         private static void HandleHttpRequest(
-            string stateId, 
+            string connectionId,
+            string contextId, 
             DateTime wholeProcessBegins, 
             Basics.Context.IHttpRequest request, 
             NetworkStream streamEnclosure,
@@ -127,7 +129,7 @@ namespace Xeora.Web.Service
         {
             Basics.Context.IHttpResponse response =
                 new HttpResponse(
-                    stateId,
+                    contextId,
                     ((Context.Request.HttpRequestHeader)request.Header).KeepAlive,
                     header =>
                     {
@@ -145,7 +147,7 @@ namespace Xeora.Web.Service
                 throw new Exception("Unable to acquire session. Possibly DSS connectivity issue or session is expired");
             
             context =
-                new HttpContext(stateId, Configurations.Xeora.Service.Ssl, request, response, session,
+                new HttpContext(connectionId, contextId, Configurations.Xeora.Service.Ssl, request, response, session,
                     ApplicationContainer.Current);
             PoolManager.KeepAlive(session.SessionId, context.HashCode);
 
@@ -155,19 +157,19 @@ namespace Xeora.Web.Service
                 Handler.Manager.Current.Create(context);
             ((Handler.Xeora)xeoraHandler).Handle();
 
-            ClientState.PrintHandlerAnalysis(stateId, xeoraHandlerProcessBegins);
+            ClientState.PrintHandlerAnalysis(contextId, xeoraHandlerProcessBegins);
 
             DateTime responseFlushBegins = DateTime.Now;
 
             ((HttpResponse)context.Response).Flush(streamEnclosure);
 
-            ClientState.PrintResponseAnalysis(stateId, responseFlushBegins);
-            ClientState.PrintWholeProcessAnalysis(stateId, wholeProcessBegins, context.Request.Header.Url.Raw);
+            ClientState.PrintResponseAnalysis(contextId, responseFlushBegins);
+            ClientState.PrintWholeProcessAnalysis(contextId, wholeProcessBegins, context.Request.Header.Url.Raw);
 
             StatusTracker.Current.Increase(context.Response.Header.Status.Code);
         }
 
-        private static void PrintHandlerAnalysis(string stateId, DateTime xeoraHandlerProcessBegins)
+        private static void PrintHandlerAnalysis(string contextId, DateTime xeoraHandlerProcessBegins)
         {
             if (!Configurations.Xeora.Application.Main.PrintAnalysis) return;
             
@@ -183,7 +185,7 @@ namespace Xeora.Web.Service
                         {
                             { "duration", totalMs }
                         },
-                        stateId
+                        contextId
                     );
                 return;
             }
@@ -195,11 +197,11 @@ namespace Xeora.Web.Service
                     {
                         { "duration", totalMs }
                     },
-                    stateId
+                    contextId
                 );
         }
 
-        private static void PrintResponseAnalysis(string stateId, DateTime responseFlushBegins)
+        private static void PrintResponseAnalysis(string contextId, DateTime responseFlushBegins)
         {
             if (!Configurations.Xeora.Application.Main.PrintAnalysis) return;
             
@@ -215,7 +217,7 @@ namespace Xeora.Web.Service
                         {
                             { "duration", totalMs }
                         },
-                        stateId
+                        contextId
                     );
                 return;
             }
@@ -227,11 +229,11 @@ namespace Xeora.Web.Service
                     {
                         { "duration", totalMs }
                     },
-                    stateId
+                    contextId
                 );
         }
         
-        private static void PrintWholeProcessAnalysis(string stateId, DateTime wholeProcessBegins, string requestRawUrl)
+        private static void PrintWholeProcessAnalysis(string contextId, DateTime wholeProcessBegins, string requestRawUrl)
         {
             if (!Configurations.Xeora.Application.Main.PrintAnalysis) return;
 
@@ -248,7 +250,7 @@ namespace Xeora.Web.Service
                             { "duration", totalMs },
                             { "requestRawUrl", requestRawUrl }
                         },
-                        stateId
+                        contextId
                     );
                 return;
             }
@@ -261,7 +263,7 @@ namespace Xeora.Web.Service
                         { "duration", totalMs },
                         { "requestRawUrl", requestRawUrl }
                     },
-                    stateId
+                    contextId
                 );
         }
         

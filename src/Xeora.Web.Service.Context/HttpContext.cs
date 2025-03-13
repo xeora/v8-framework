@@ -5,6 +5,7 @@ namespace Xeora.Web.Service.Context
     public class HttpContext : KeyValueCollection<string, object>, Basics.Context.IHttpContext
     {
         public HttpContext(
+            string connectionId,
             string contextId,
             bool secure,
             Basics.Context.IHttpRequest request, 
@@ -12,6 +13,7 @@ namespace Xeora.Web.Service.Context
             Basics.Session.IHttpSession session, 
             Basics.Application.IHttpApplication application)
         {
+            this.ConnectionId = connectionId;
             this.UniqueId = contextId;
             this.HashCode = 
                 this.GetOrCreateHashCode(ref request);
@@ -63,6 +65,7 @@ namespace Xeora.Web.Service.Context
             return this.GetHashCode().ToString().Replace("-", string.Empty);
         }
         
+        public string ConnectionId { get; }
         public string UniqueId { get; }
         public Basics.Context.IHttpRequest Request { get; }
         public Basics.Context.IHttpResponse Response { get; }
