@@ -12,6 +12,7 @@ namespace Xeora.Web.Directives.Elements
             this._TemplateId = DirectiveHelper.CaptureDirectiveId(rawValue);
 
         public override bool Searchable => false;
+        public override bool Dynamic => false;
         public override bool CanAsync => true;
         public override bool CanHoldVariable => false;
 

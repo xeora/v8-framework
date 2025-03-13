@@ -12,6 +12,7 @@ namespace Xeora.Web.Directives.Elements
             this._Contents = new ContentDescription(rawValue);
 
         public override bool Searchable => false;
+        public override bool Dynamic => true;
         public override bool CanAsync => true;
         public override bool CanHoldVariable => true;
 

@@ -31,6 +31,7 @@ namespace Xeora.Web.Directives.Elements
         public bool HasBound => !string.IsNullOrEmpty(this.BoundDirectiveId);
 
         public override bool Searchable => false;
+        public override bool Dynamic => !this._Cache || this._ParametersDefinition != null;
         public override bool CanAsync => false;
         public override bool CanHoldVariable => false;
 

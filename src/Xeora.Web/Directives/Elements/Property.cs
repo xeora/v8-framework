@@ -57,6 +57,8 @@ namespace Xeora.Web.Directives.Elements
         }
 
         public override bool Searchable => false;
+        public override bool Dynamic { get; } = true;
+
         public override bool CanAsync { get; }
         public override bool CanHoldVariable => false;
 

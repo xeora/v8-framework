@@ -24,6 +24,7 @@ namespace Xeora.Web.Directives.Elements
         public Basics.Execution.Bind Bind { get; }
 
         public override bool Searchable => false;
+        public override bool Dynamic => true;
         public override bool CanAsync => false;
         public override bool CanHoldVariable => false;
 
@@ -104,9 +105,7 @@ namespace Xeora.Web.Directives.Elements
             if (invokeResult.Result is Basics.ControlResult.RedirectOrder redirectOrder)
             {
                 Helpers.Context.AddOrUpdate("RedirectLocation", redirectOrder.Location);
-
-                // this.Children.Add(
-                //    new Static(string.Empty));
+                
                 return true;
             }
 

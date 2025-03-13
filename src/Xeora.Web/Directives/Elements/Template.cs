@@ -19,6 +19,7 @@ namespace Xeora.Web.Directives.Elements
         public string DirectiveId { get; }
 
         public override bool Searchable => true;
+        public override bool Dynamic => true;
         public override bool CanAsync => false;
         public override bool CanHoldVariable => false;
 
@@ -31,13 +32,13 @@ namespace Xeora.Web.Directives.Elements
             this.Mother.RequestInstance(out IDomain instance);
 
             IDomain workingInstance = instance;
-
+            
             this._Authenticated = 
                 this.CheckAuthentication(ref instance, ref workingInstance);
 
             if (!this._Authenticated)
                 return;
-
+            
             this.ParseInternal(ref workingInstance);
         }
 

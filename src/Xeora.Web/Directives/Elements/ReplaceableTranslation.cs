@@ -6,6 +6,8 @@ namespace Xeora.Web.Directives.Elements
 {
     public class ReplaceableTranslation : Directive, INameable
     {
+        private const string DYNAMIC_CACHE_POINTER = "!DYNAMIC";
+        
         private readonly ContentDescription _Contents;
         private bool _Parsed;
 
@@ -14,11 +16,14 @@ namespace Xeora.Web.Directives.Elements
         {
             this.DirectiveId = DirectiveHelper.CaptureDirectiveId(rawValue);
             this._Contents = new ContentDescription(rawValue);
+            this.Dynamic =
+                this._Contents.Parts[0].StartsWith(ReplaceableTranslation.DYNAMIC_CACHE_POINTER);
         }
 
         public string DirectiveId { get; }
 
         public override bool Searchable => false;
+        public override bool Dynamic { get; }
         public override bool CanAsync => true;
         public override bool CanHoldVariable => false;
 
