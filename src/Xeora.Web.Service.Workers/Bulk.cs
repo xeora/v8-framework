@@ -1,22 +1,25 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Xeora.Web.Service.Workers
 {
     public class Bulk
     {
-        private readonly ConcurrentDictionary<string, ActionContainer> _ActionQueueContainers;
-        private readonly ConcurrentDictionary<string, ActionContainer> _ActionTrackerContainers;
-        private readonly Action<ActionContainer> _AddHandler;
+        private readonly Action<List<ActionContainer>> _QueueHandler;
+        
+        private readonly ConcurrentDictionary<string, bool> _ActionTracker;
+        private readonly List<ActionContainer> _ActionContainers;
         
         private readonly object _Lock = new();
 
-        internal Bulk(Action<ActionContainer> addHandler)
+        internal Bulk(Action<List<ActionContainer>> queueHandler)
         {
-            this._ActionQueueContainers = new ConcurrentDictionary<string, ActionContainer>();
-            this._ActionTrackerContainers = new ConcurrentDictionary<string, ActionContainer>();
-            this._AddHandler = addHandler;
+            this._QueueHandler = queueHandler;
+            
+            this._ActionTracker = new ConcurrentDictionary<string, bool>();
+            this._ActionContainers = new List<ActionContainer>();
         }
 
         private void Completed(string id)
@@ -24,8 +27,8 @@ namespace Xeora.Web.Service.Workers
             Monitor.Enter(this._Lock);
             try
             {
-                this._ActionQueueContainers.TryRemove(id, out _);
-                if (!this._ActionQueueContainers.IsEmpty) return;
+                this._ActionTracker.TryRemove(id, out _);
+                if (!this._ActionTracker.IsEmpty) return;
                 
                 Monitor.Pulse(this._Lock);
             }
@@ -37,47 +40,28 @@ namespace Xeora.Web.Service.Workers
 
         public void Add(Action<object> startHandler, object state, ActionType actionType)
         {
+            if (actionType == ActionType.Connection)
+                throw new ArgumentException("Not allowed to queue the Connection action into context");
+
             ActionContainer actionContainer =
-                new ActionContainer(startHandler, state, actionType, this.Completed);
-            
-            this._ActionQueueContainers.TryAdd(actionContainer.Id, actionContainer);
-            this._ActionTrackerContainers.TryAdd(actionContainer.Id, actionContainer);
-        }
-
-        private void ScheduleOrRun(ActionType actionType)
-        {
-            // Prioritized the actions
-            foreach (var (_, actionContainer) in this._ActionTrackerContainers)
-            {
-                if (actionContainer.Type != actionType) continue;
-
-                if (Factory.Available)
-                {
-                    this._AddHandler.Invoke(actionContainer);
-                    continue;
-                }
+                new ActionContainer((_, s) => startHandler(s), state, actionType, this.Completed);
                 
-                actionContainer.Invoke();
-            }
+            this._ActionTracker.TryAdd(actionContainer.Id, true);
+            this._ActionContainers.Add(actionContainer);
         }
         
         public void Process()
         {
-            // Check if bulk is empty
-            if (this._ActionQueueContainers.IsEmpty) return;
-
-            // Prioritized the actions
-            this.ScheduleOrRun(ActionType.Attached);
-            this.ScheduleOrRun(ActionType.External);
-
-            // Check bulk actions handled as sync and no more bulk to wait 
-            if (this._ActionQueueContainers.IsEmpty) return;
+            if (this._ActionTracker.IsEmpty) return;
+            
+            this._QueueHandler.Invoke(this._ActionContainers);
+            
+            if (this._ActionTracker.IsEmpty) return;
             
             Monitor.Enter(this._Lock);
             try
             {
-                // Check until it reaches here, all bulk actions are concluded
-                if (this._ActionQueueContainers.IsEmpty) return;
+                if (this._ActionTracker.IsEmpty) return;
                 
                 Monitor.Wait(this._Lock);
             }

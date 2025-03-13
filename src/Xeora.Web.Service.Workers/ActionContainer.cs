@@ -8,7 +8,7 @@ namespace Xeora.Web.Service.Workers
     {
         private readonly Action<string> _CompletionHandler;
         
-        public ActionContainer(Action<object> action, object state, ActionType type, Action<string> completionHandler = null)
+        public ActionContainer(Action<string, object> action, object state, ActionType type, Action<string> completionHandler = null)
         {
             this.Id = Guid.NewGuid().ToString();
             
@@ -19,23 +19,28 @@ namespace Xeora.Web.Service.Workers
             this._CompletionHandler = completionHandler;
         }
 
-        private Action<object> Action { get; }
+        public string Id { get; }
+        
+        private Action<string, object> Action { get; }
         private object State { get; }
 
-        public string Id { get; }
+        public string ConnectionId { get; private set; }
         public ActionType Type { get; }
+
+        public void AssignConnectionId(string connectionId) =>
+            this.ConnectionId = connectionId;
         
         public void Invoke()
         {
             try
             {
-                this.Action.Invoke(this.State);
+                this.Action.Invoke(this.ConnectionId, this.State);
             }
             catch (Exception e)
             {
                 Basics.Logging.Current
                     .Error(
-                        "ThreadPool Exception...",
+                        "Action Container Exception...",
                         new Dictionary<string, object>
                         {
                             { "message", e.Message },
@@ -61,7 +66,7 @@ namespace Xeora.Web.Service.Workers
                     new StringBuilder();
 
                 string typeResult = 
-                    this.State.GetType().GetProperty("Type")?.GetMethod?
+                    this.State.GetType().GetProperty("Type", typeof(Basics.Domain.Control.ControlTypes))?.GetMethod?
                         .Invoke(this.State, null)?.ToString();
                 if (!string.IsNullOrEmpty(typeResult)) builder.Append(typeResult);
                 
@@ -82,18 +87,28 @@ namespace Xeora.Web.Service.Workers
 
                 Basics.Logging.Current
                     .Information(
-                        "ActionContainer Report",
+                        "Action Container Report",
                         new Dictionary<string, object>
                         {
-                            { "id", this.Id },
-                            { "summary", builder }
+                            { "id", this.ConnectionId },
+                            { "type", this.Type.ToString() },
+                            { "summary", builder.ToString() }
                         }
                     )
                     .Flush();
             }
-            catch
+            catch (Exception e)
             {
-                /* Just handle exceptions */
+                Basics.Logging.Current
+                   .Error(
+                       "Action Container Details Report Exception...",
+                       new Dictionary<string, object>
+                       {
+                           { "message", e.Message },
+                           { "trace", e.ToString() }
+                       }
+                   )
+                   .Flush();
             }
         }
     }

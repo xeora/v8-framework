@@ -1,32 +1,29 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Threading;
 
 namespace Xeora.Web.Service.Workers
 {
     internal class Worker
     {
-        internal const short THREAD_COUNT = 128;
-        private const int JOIN_WAIT_TIMEOUT = 5000;
-        
         private readonly BlockingCollection<ActionContainer> _Queue;
-        private readonly Action<ActionType> _ActionNotifyHandler;
-        
         private readonly ConcurrentStack<ActionContainer> _ExternalActionStack;
+        
+        internal delegate void HeavyNotifiedHandler(bool heavy);
+        internal event HeavyNotifiedHandler HeavyNotified;
+        
         private readonly Thread _Thread;
         private ActionContainer _CurrentContainer;
 
-        public Worker(BlockingCollection<ActionContainer> queue, Action<ActionType> actionNotifyHandler)
+        public Worker(BlockingCollection<ActionContainer> queue)
         {
             this._Queue = queue;
-            this._ActionNotifyHandler = actionNotifyHandler;
-            
             this._ExternalActionStack = new ConcurrentStack<ActionContainer>();
+            
             this._Thread =
-                new Thread(this.Listen) {Priority = ThreadPriority.BelowNormal, IsBackground = true};
+                new Thread(this.Listen) {Priority = ThreadPriority.Normal, IsBackground = true};
             this._Thread.Start();
         }
-
+        
         private void Listen()
         {
             try
@@ -43,10 +40,10 @@ namespace Xeora.Web.Service.Workers
                         actionContainer = this._Queue.Take();
                     }
 
-                    if (actionContainer.Type == ActionType.External)
+                    if (actionContainer.Type == ActionType.Secondary)
                     {
-                        // We have an External to handle
-                        this._ActionNotifyHandler.Invoke(ActionType.External);
+                        // We have a Secondary to handle
+                        this.HeavyNotified?.Invoke(true);
                         this._ExternalActionStack.Push(actionContainer);
                         continue;
                     }
@@ -57,42 +54,28 @@ namespace Xeora.Web.Service.Workers
             catch
             { /* just handle exception */ }
         }
-
+        
         private void Process(ActionContainer actionContainer)
         {
             this._CurrentContainer = actionContainer;
             
-            this.Processing = true;
             try
             {
+                if (Common.PrintReport) 
+                    this._CurrentContainer.PrintContainerDetails();
                 this._CurrentContainer.Invoke();
             }
-            catch
-            { /* Just handle exceptions */ }
             finally
             {
                 this._CurrentContainer = null;
-                this.Processing = false;
                 
-                // External is handled
-                if (actionContainer.Type == ActionType.External)
-                    this._ActionNotifyHandler.Invoke(ActionType.None);
+                // Secondary is handled
+                if (actionContainer.Type == ActionType.Secondary)
+                    this.HeavyNotified?.Invoke(false);
             }
         }
-
-        public void PrintReport() =>
-            this._CurrentContainer?.PrintContainerDetails();
-
-        public bool Processing { get; private set; }
-
-        public void Join()
-        {
-            try
-            {
-                this._Thread.Join(Worker.JOIN_WAIT_TIMEOUT);
-            }
-            catch
-            { /* Just handle exceptions */ }
-        }
+        
+        public void Join() =>
+            this._Thread.Join(Common.JOIN_WAIT_TIMEOUT);
     }
 }

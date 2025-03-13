@@ -1,56 +1,37 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 
 // The worker control is developed to skip the bottleneck of .NET async Task operation.
-// Async task operations are based on scheduling but they are too slow for web requests
+// Async task operations are based on scheduling, but they are too slow for web requests,
 // and it ends with slow response time and latency on service. That's why, "Workers"
 // implementation is providing agile and more responsive web service for Xeora.
 namespace Xeora.Web.Service.Workers
 {
     public class Factory
     {
-        private readonly BlockingCollection<ActionContainer> _ActionQueue;
-        private readonly List<Worker> _Workers;
+        private const ushort MAX_WORKER_THREADS = ushort.MaxValue;
+        
+        private readonly ConnectionEngine _ConnectionEngine;
 
-        private readonly int _WorkerCount;
-        private long _ExternalLoad;
-
-        private Factory(int workerCount)
+        private Factory(ushort maxConnection, ushort magnitude)
         {
-            this._WorkerCount = workerCount;
-            this._ActionQueue = 
-                new BlockingCollection<ActionContainer>();
+            Factory.WorkerThreads = 
+                maxConnection * magnitude;
 
-            this._Workers = new List<Worker>();
-
-            if (workerCount < 1) workerCount = Worker.THREAD_COUNT;
+            if (Factory.WorkerThreads > Factory.MAX_WORKER_THREADS)
+            {
+                Factory.WorkerThreads = Factory.MAX_WORKER_THREADS;
+                magnitude = (ushort)(Factory.MAX_WORKER_THREADS / maxConnection);
+            }
             
-            for (short i = 0; i < workerCount; i++)
-                this._Workers.Add(new 
-                    Worker(
-                        this._ActionQueue,
-                        actionType =>
-                        {
-                            switch (actionType)
-                            {
-                                case ActionType.External:
-                                    Interlocked.Increment(ref this._ExternalLoad);
-                                    break;
-                                case ActionType.None:
-                                    Interlocked.Decrement(ref this._ExternalLoad);
-                                    break;
-                            }
-                        }
-                    )
-                );
-
+            this._ConnectionEngine = 
+                new ConnectionEngine(maxConnection, magnitude);
+            
             Basics.Console.Register(keyInfo => {
                 if ((keyInfo.Modifiers & ConsoleModifiers.Control) == 0 || keyInfo.Key != ConsoleKey.D)
                     return;
 
-                if (this._ActionQueue.IsAddingCompleted)
+                if (this._ConnectionEngine.Disposed)
                 {
                     Basics.Logging.Current
                         .Information("Worker Factory has been already requested to be killed")
@@ -58,24 +39,9 @@ namespace Xeora.Web.Service.Workers
                     return;
                 }
 
-                short processing = 0;
-                foreach (Worker workerThread in this._Workers)
-                {
-                    if (!workerThread.Processing) continue;
-
-                    processing++;
-                    workerThread.PrintReport();
-                }
-
-                Basics.Logging.Current
-                    .Information(
-                        $"Worker Factory is processing {processing} Task(s), {this._Workers.Count - processing} available Worker(s) in total {this._Workers.Count} Worker(s)")
-                    .Flush();
+                Common.ToggleReporting();
             });
         }
-
-        private bool Full => 
-            Interlocked.Read(ref this._ExternalLoad) >= this._WorkerCount;
         
         private void _Kill()
         {
@@ -85,11 +51,7 @@ namespace Xeora.Web.Service.Workers
                 .Information("Worker Factory is draining...")
                 .Flush();
 
-            this._ActionQueue.CompleteAdding();
-            this._ActionQueue.Dispose();
-            
-            foreach (Worker worker in this._Workers)
-                worker.Join();
+            this._ConnectionEngine.Complete();
             
             Factory._current = null;
             
@@ -98,15 +60,15 @@ namespace Xeora.Web.Service.Workers
                 .Flush();
         }
 
-        private static readonly object Lock = new object();
+        private static readonly object Lock = new();
         private static Factory _current;
 
-        public static void Init(int workerCount)
+        public static void Init(ushort maxConnection, ushort magnitude)
         {
             Monitor.Enter(Factory.Lock);
             try
             {
-                Factory._current ??= new Factory(workerCount);
+                Factory._current ??= new Factory(maxConnection, magnitude);
             }
             finally
             {
@@ -114,15 +76,16 @@ namespace Xeora.Web.Service.Workers
             }
         }
         
-        public static Bulk CreateBulk() =>
-            !Factory._current._ActionQueue.IsAddingCompleted
-                ? new Bulk(a => Factory._current._ActionQueue.Add(a))
-                : null;
+        public static int WorkerThreads { get; private set; }
+        
+        public static void Spin(Action<string, object> action, object state) =>
+            Factory._current._ConnectionEngine.Spin(new ActionContainer(action, state, ActionType.Connection));
 
-        public static void Queue(Action<object> action, object state) =>
-            Factory._current._ActionQueue.Add(new ActionContainer(action, state, ActionType.External));
+        public static Bulk CreateBulkForConnection(string connectionId) =>
+            new(actionContainerList => Factory._current._ConnectionEngine.QueueToConnection(connectionId, actionContainerList));
 
-        public static bool Available => !Factory._current.Full;
+        public static void FinalizeConnection(string connectionId) =>
+            Factory._current._ConnectionEngine.FinalizeConnection(connectionId);   
         
         public static void Kill() =>
             Factory._current?._Kill();
