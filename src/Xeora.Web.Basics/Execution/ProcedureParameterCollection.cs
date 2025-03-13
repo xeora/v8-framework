@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 namespace Xeora.Web.Basics.Execution
 {
-    [Serializable]
     public class ProcedureParameterCollection : IEnumerable
     {
         private readonly List<ProcedureParameter> _Parameters;

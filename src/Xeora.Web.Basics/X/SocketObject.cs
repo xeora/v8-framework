@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Xeora.Web.Basics.X
 {
-    [Serializable]
     public class SocketObject
     {
         public SocketObject(Context.IHttpContext context, KeyValuePair<string, object>[] parameters)

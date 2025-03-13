@@ -1,8 +1,5 @@
-﻿using System;
-
-namespace Xeora.Web.Basics
+﻿namespace Xeora.Web.Basics
 {
-    [Serializable]
     public class PermissionResult
     {
         public enum Results

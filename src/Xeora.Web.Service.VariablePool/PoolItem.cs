@@ -1,8 +1,5 @@
-﻿using System;
-
-namespace Xeora.Web.Service.VariablePool
+﻿namespace Xeora.Web.Service.VariablePool
 {
-    [Serializable]
     internal class PoolItem : Basics.Service.IVariablePool
     {
         private readonly Basics.Dss.IDss _Reservation;

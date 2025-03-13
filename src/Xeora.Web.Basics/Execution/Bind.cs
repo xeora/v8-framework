@@ -2,7 +2,6 @@
 
 namespace Xeora.Web.Basics.Execution
 {
-    [Serializable]
     public class Bind
     {
         private Bind(string executable, string[] classes, string procedure, string[] parameters)
