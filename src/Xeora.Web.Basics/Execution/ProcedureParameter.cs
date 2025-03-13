@@ -1,21 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Xeora.Web.Basics.Execution
 {
-    [Serializable]
     public class ProcedureParameter
     {
-        private readonly Dictionary<char, bool> _Operators =
-            new Dictionary<char, bool> {
-                { '^', true },
-                { '~', true },
-                { '-', true },
-                { '&', true },
-                { '+', true },
-                { '=', true },
-                { '#', true },
-                { '*', true }
+        private readonly Dictionary<char, bool> _SupportedOperators =
+            new() 
+            {
+                { '^', true }, // Query
+                { '~', true }, // Form
+                { '-', true }, // Session
+                { '&', true }, // Application
+                { '+', true }, // Cookie
+                { '=', true }, // Constant
+                { '#', true }, // Data Field
+                { '*', true } // Wildcard
             };
 
         public ProcedureParameter(string parameter)
@@ -29,7 +28,7 @@ namespace Xeora.Web.Basics.Execution
             this.Query = parameter;
             this.Key = parameter;
 
-            if (!this._Operators.ContainsKey(this.Key[0]))
+            if (!this._SupportedOperators.ContainsKey(this.Key[0]))
                 return;
 
             if (this.Key[0] != '#')
