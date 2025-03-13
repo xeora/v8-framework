@@ -133,27 +133,17 @@ namespace Xeora.Web.Service
 
                 ushort maxConnection =
                     Basics.Configurations.Xeora.Service.Parallelism.MaxConnection;
-                int workerThreads =
-                    Basics.Configurations.Xeora.Service.Parallelism.WorkerThreads;
+                ushort magnitude =
+                    Basics.Configurations.Xeora.Service.Parallelism.Magnitude;
+                
+                Workers.Factory.Init(maxConnection, magnitude);
 
-                if (maxConnection > 0)
-                {
-                    Workers.Factory.Init(workerThreads);
+                this._SemaphoreSlim = 
+                    new SemaphoreSlim(maxConnection);
 
-                    this._SemaphoreSlim = new SemaphoreSlim(maxConnection);
-
-                    Basics.Logging.Current
-                        .Information(
-                            $"Maximum simultaneous connection is limited to {maxConnection} with {workerThreads} WorkerThread(s)");
-                }
-                else
-                {
-                    Workers.Factory.Init(workerThreads);
-
-                    Basics.Logging.Current
-                        .Information(
-                            $"System currently working without any simultaneous connection limit with {workerThreads} WorkerThread(s)");
-                }
+                Basics.Logging.Current
+                    .Information(
+                        $"Maximum simultaneous connection is limited to {maxConnection} with the pool size of {Workers.Factory.WorkerThreads} WorkerThread(s)");
             }
             catch (Exception ex)
             {
@@ -194,10 +184,12 @@ namespace Xeora.Web.Service
 
                     if (this._SemaphoreSlim != null) await this._SemaphoreSlim.WaitAsync();
 
-                    Workers.Factory.Queue(
-                        c =>
+                    Workers.Factory.Spin(
+                        (connectionId, c) =>
                         {
-                            ((Connection)c).Process();
+                            ((Connection)c).Process(connectionId);
+                            Workers.Factory.FinalizeConnection(connectionId);
+                            
                             this._SemaphoreSlim?.Release();
                         },
                         new Connection(ref remoteClient, this._Certificate)
