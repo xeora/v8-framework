@@ -1,16 +1,17 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace Xeora.Web.Directives
 {
     internal class PartialCachePool
     {
-        private readonly ConcurrentDictionary<string[], ConcurrentDictionary<string, PartialCacheObject>> _PartialCaches;
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, PartialCacheObject>> _PartialCaches;
 
         private PartialCachePool() =>
-            this._PartialCaches = new ConcurrentDictionary<string[], ConcurrentDictionary<string, PartialCacheObject>>();
+            this._PartialCaches = new ConcurrentDictionary<string, ConcurrentDictionary<string, PartialCacheObject>>();
 
-        private static readonly object Lock = new object();
+        private static readonly object Lock = new();
         private static PartialCachePool _current;
         public static PartialCachePool Current
         {
@@ -28,26 +29,30 @@ namespace Xeora.Web.Directives
             }
         }
 
+        private string Key(string[] domainIdAccessTree) =>
+            string.Join("/", domainIdAccessTree);
+        
         public void AddOrUpdate(string[] domainIdAccessTree, PartialCacheObject cacheObject)
         {
-            if (!this._PartialCaches.TryGetValue(domainIdAccessTree, out ConcurrentDictionary<string, PartialCacheObject> cacheObjects))
-            {
-                cacheObjects = 
-                    new ConcurrentDictionary<string, PartialCacheObject>();
-                this._PartialCaches.TryAdd(domainIdAccessTree, cacheObjects);
-            }
-
-            cacheObjects.AddOrUpdate(cacheObject.CacheId, cacheObject, (cCacheId, cCacheObject) => cacheObject);
+            this._PartialCaches.AddOrUpdate(
+                this.Key(domainIdAccessTree),
+                new ConcurrentDictionary<string, PartialCacheObject>(
+                    new[] { new KeyValuePair<string, PartialCacheObject>(cacheObject.CacheId, cacheObject) }
+                ),
+                (_, cO) =>
+                {
+                    cO.TryAdd(cacheObject.CacheId, cacheObject);
+                    return cO;
+                }
+            );
         }
 
         public void Get(string[] domainIdAccessTree, string cacheId, out PartialCacheObject cacheObject)
         {
             cacheObject = null;
-
-            if (!this._PartialCaches.TryGetValue(domainIdAccessTree, out ConcurrentDictionary<string, PartialCacheObject> cacheObjects))
-                return;
-
-            cacheObjects.TryGetValue(cacheId, out cacheObject);
+            
+            if (this._PartialCaches.TryGetValue(this.Key(domainIdAccessTree), out ConcurrentDictionary<string, PartialCacheObject> cacheObjects))
+                cacheObjects.TryGetValue(cacheId, out cacheObject);
         }
 
         public void Reset() =>

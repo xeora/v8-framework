@@ -1,13 +1,17 @@
-﻿using Xeora.Web.Global;
+﻿using System.Collections.Generic;
+using Xeora.Web.Global;
 
 namespace Xeora.Web.Directives.Elements
 {
     public class PartialCache : Directive
     {
+        private const string DYNAMIC_CACHE_POINTER = "!DYNAMIC";
+        
         private readonly int _PositionId;
         private readonly string[] _Parameters;
         private readonly string[] _CacheIdExtensions;
         private readonly ContentDescription _Contents;
+        private readonly bool _DynamicCache;
         private bool _Parsed;
 
         public PartialCache(string rawValue, int positionId, ArgumentCollection arguments) :
@@ -18,9 +22,12 @@ namespace Xeora.Web.Directives.Elements
                 DirectiveHelper.CaptureDirectiveParameters(rawValue, true);
             this._CacheIdExtensions = new string[this._Parameters.Length];
             this._Contents = new ContentDescription(rawValue);
+            this._DynamicCache =
+                this._Contents.Parts[0].StartsWith(PartialCache.DYNAMIC_CACHE_POINTER);
         }
 
         public override bool Searchable => false;
+        public override bool Dynamic => false;
         public override bool CanAsync => false;
         public override bool CanHoldVariable => false;
 
@@ -39,7 +46,13 @@ namespace Xeora.Web.Directives.Elements
                     Xeora.Web.Directives.Property.Render(this.Parent, this._Parameters[i]).Item2?.ToString();
 
             this.Children = new DirectiveCollection(this.Mother, this);
-            this.Mother.RequestParsing(this._Contents.Parts[0], this.Children, this.Arguments);
+            this.Mother.RequestParsing(
+                this._DynamicCache
+                    ? this._Contents.Parts[0][PartialCache.DYNAMIC_CACHE_POINTER.Length..]
+                    : this._Contents.Parts[0], 
+                this.Children, 
+                this.Arguments
+            );
         }
 
         private string[] _InstanceIdAccessTree;
@@ -50,27 +63,46 @@ namespace Xeora.Web.Directives.Elements
                 return false;
             this.Status = RenderStatus.Rendering;
             
-            this.Parse();
-            
             this.Mother.RequestInstance(out Basics.Domain.IDomain instance);
             this._InstanceIdAccessTree = instance.IdAccessTree;
             this._CacheId =
                 PartialCacheObject.CreateUniqueCacheId(this._PositionId, string.Join('_', this._CacheIdExtensions), this, ref instance);
             PartialCachePool.Current.Get(this._InstanceIdAccessTree, this._CacheId, out PartialCacheObject cacheObject);
 
-            if (cacheObject == null) return true;
+            if (cacheObject == null)
+                this.Parse();
+            else
+            {
+                this.Children = new DirectiveCollection(this.Mother, this);
+                this.Children.AddRange(cacheObject.Directives);
+            }
             
-            this.Deliver(RenderStatus.Rendered, cacheObject.Content);
-            return false;
+            return true;
         }
 
         public override void PostRender()
         {
             this.Deliver(RenderStatus.Rendered, this.Result);
 
+            if (!this._DynamicCache)
+            {
+                PartialCachePool.Current.AddOrUpdate(
+                    this._InstanceIdAccessTree,
+                    new PartialCacheObject(
+                        this._CacheId,
+                        new List<IDirective>(new[] { new Static(this.Result) }))
+                );
+                return;
+            }
+
+            List<IDirective> cachedDirectives =
+                new List<IDirective>();
+            foreach (IDirective directive in this.Children)
+                cachedDirectives.Add(directive.Dynamic ? directive : new Static(directive.Result));
+            
             PartialCachePool.Current.AddOrUpdate(
                 this._InstanceIdAccessTree,
-                new PartialCacheObject(this._CacheId, this.Result)
+                new PartialCacheObject(this._CacheId, cachedDirectives)
             );
         }
     }
