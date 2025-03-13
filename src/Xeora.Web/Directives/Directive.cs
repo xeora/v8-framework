@@ -43,6 +43,9 @@ namespace Xeora.Web.Directives
         public DirectiveScheduler Scheduler { get; }
 
         public abstract bool Searchable { get; }
+        // If it is in PartialCache, It needs to be re-rendered for the updated value
+        // without breaking the actual cache
+        public abstract bool Dynamic { get; }
         public abstract bool CanAsync { get; }
         public abstract bool CanHoldVariable { get; }
         public bool HasInlineError { get; set; }

@@ -18,6 +18,7 @@ namespace Xeora.Web.Directives
         DirectiveScheduler Scheduler { get; }
 
         bool Searchable { get; }
+        bool Dynamic { get; }
         bool CanAsync { get; }
         bool CanHoldVariable { get; }
         bool HasInlineError { get; set; }
