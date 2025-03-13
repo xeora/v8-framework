@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using Xeora.Web.Basics;
@@ -10,15 +9,11 @@ namespace Xeora.Web.Directives
 {
     public class DirectiveCollection : List<IDirective>
     {
-        private readonly ConcurrentQueue<int> _Queued;
-
         private readonly IMother _Mother;
         private readonly IDirective _Parent;
 
         public DirectiveCollection(IMother mother, IDirective parent)
         {
-            this._Queued = new ConcurrentQueue<int>();
-
             this._Mother = mother;
             this._Parent = parent;
         }
@@ -35,8 +30,7 @@ namespace Xeora.Web.Directives
 
             if (item is Control control)
                 control.Load();
-
-            this._Queued.Enqueue(this.Count);
+            
             base.Add(item);
         }
 
@@ -75,16 +69,13 @@ namespace Xeora.Web.Directives
         {
             string handlerId =
                 Helpers.CurrentHandlerId;
-            Bulk bulk = Factory.CreateBulk();
-
-            int queueLength = 
-                this._Queued.Count;
-
-            while (this._Queued.TryDequeue(out int index))
+            Bulk bulk = Factory.CreateBulkForConnection(Helpers.Context.ConnectionId);
+            
+            for (int i = 0; i < this.Count; i++)
             {
-                IDirective directive = this[index];
+                IDirective directive = this[i];
                 
-                if (!directive.CanAsync || queueLength == 1)
+                if (!directive.CanAsync || this.Count == 1)
                 {
                     this.Render(directive);
                     continue;
@@ -94,8 +85,8 @@ namespace Xeora.Web.Directives
                 // Directives with content may need special care and should be external
                 ActionType actionType = directive switch
                 {
-                    Translation or Static or Elements.Property => ActionType.Attached,
-                    AsyncGroup or ControlAsync or ReplaceableTranslation or MessageBlock or SingleAsync => ActionType.External,
+                    Translation or Static or Elements.Property => ActionType.Primary,
+                    AsyncGroup or ControlAsync or ReplaceableTranslation or MessageBlock or SingleAsync => ActionType.Secondary,
                     _ => ActionType.None
                 };
 
