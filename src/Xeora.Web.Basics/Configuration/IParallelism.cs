@@ -4,6 +4,5 @@
     {
         ushort MaxConnection { get; }
         ushort Magnitude { get; }
-        public ushort WorkerThreads { get; }
     }
 }
