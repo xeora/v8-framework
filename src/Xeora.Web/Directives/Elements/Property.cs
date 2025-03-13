@@ -19,26 +19,30 @@ namespace Xeora.Web.Directives.Elements
             switch (this._RawValue)
             {
                 case "DomainContents":
+                    this.Dynamic = false;
+                    break;
                 case "PageRenderDuration":
                     break;
                 default:
                     switch (this._RawValue[0])
                     {
-                        case '^':
-                        case '~':
-                        case '-':
-                        case '&':
-                        case '+':
-                        case '=':
-                        case '#':
+                        case PropertyConstants.CONSTANT:
+                            this.Dynamic = false;
                             break;
-                        case '@':
+                        case PropertyConstants.QUERY:
+                        case PropertyConstants.FORM:
+                        case PropertyConstants.SESSION:
+                        case PropertyConstants.APPLICATION:
+                        case PropertyConstants.COOKIE:
+                        case PropertyConstants.DATA_FIELD:
+                            break;
+                        case PropertyConstants.OBJECT:
                             switch (this._RawValue[1])
                             {
-                                case '-':
-                                case '&':
-                                case '#':
-                                case '.':
+                                case PropertyConstants.SESSION:
+                                case PropertyConstants.APPLICATION:
+                                case PropertyConstants.DATA_FIELD:
+                                case PropertyConstants.DIRECTIVE:
                                     break;
                                 default:
                                     this.CanAsync = false;

@@ -32,7 +32,8 @@ namespace Xeora.Web.Directives
         
         private Tuple<bool, object> Render()
         {
-            if (string.IsNullOrEmpty(this._RawValue)) return new Tuple<bool, object>(true, string.Empty);
+            if (string.IsNullOrEmpty(this._RawValue)) 
+                return new Tuple<bool, object>(true, string.Empty);
 
             switch (this._RawValue)
             {
@@ -43,66 +44,60 @@ namespace Xeora.Web.Directives
                 default:
                     switch (this._RawValue[0])
                     {
-                        case '^':
+                        case PropertyConstants.QUERY:
                             // QueryString Value
                             return this.RenderQueryString();
-                        case '~':
+                        case PropertyConstants.FORM:
                             // Form Post Value
                             return this.RenderFormPost();
-                        case '-':
+                        case PropertyConstants.SESSION:
                             // Session Value
                             return this.RenderSessionItem();
-                        case '&':
+                        case PropertyConstants.APPLICATION:
                             // Application Value
                             return this.RenderApplicationItem();
-                        case '+':
+                        case PropertyConstants.COOKIE:
                             // Cookies Value
                             return this.RenderCookieItem();
-                        case '=':
+                        case PropertyConstants.CONSTANT:
                             // Value which following after '='
                             return this.RenderStaticString();
-                        case '#':
-                            // DataTable Field
+                        case PropertyConstants.DATA_FIELD:
+                            // DataTable Field should belong to parent directive
                             return this.RenderDataItem();
-                        case '*':
-                            // Search in All order by : [InData, DataField, Session, Application, Form Post, QueryString, Cookie] (DOES NOT SUPPORT FILE POSTS)
+                        case PropertyConstants.WILDCARD:
+                            // Search in All order by :
+                            // [Directive, VariablePool, Session, Application, Cookie, Form (File, Field), Query]
                             string searchArgKey = 
                                 this._RawValue.Substring(1);
 
-                            // Search InDatas
-                            object searchArgValue = this._Arguments?[searchArgKey];
-
+                            // Search In Directive.
+                            //      Directive can be itself (.) or parent (#). That changes based on the caller. 
+                            //      Directive can act like a Data Field (#) in that perspective in this context.
                             // Search In VariablePool
-                            if (searchArgValue == null)
-                                searchArgValue = Helpers.VariablePool.Get<object>(searchArgKey);
-
                             // Search In Session
-                            if (searchArgValue == null)
-                                searchArgValue = Helpers.Context.Session[searchArgKey];
-
                             // Search In Application
-                            if (searchArgValue == null)
-                                searchArgValue = Helpers.Context.Application[searchArgKey];
+                            object searchArgValue = 
+                                this._Arguments?[searchArgKey]
+                                    ?? Helpers.VariablePool.Get<object>(searchArgKey)
+                                    ?? Helpers.Context.Session[searchArgKey]
+                                    ?? Helpers.Context.Application[searchArgKey];
                             
-                            // Cookie
+                            // Search In Cookie
                             if (searchArgValue == null &&
                                 Helpers.Context.Request.Header.Cookie[searchArgKey] != null)
-                            {
                                 searchArgValue = Helpers.Context.Request.Header.Cookie[searchArgKey].Value;
-                            }
 
-                            // Search In Form Post First File then Value
-                            if (searchArgValue == null)
-                                searchArgValue = Helpers.Context.Request.Body.File[searchArgKey];
-                            if (searchArgValue == null)
-                                searchArgValue = Helpers.Context.Request.Body.Form[searchArgKey];
-
-                            // Search QueryString
-                            if (searchArgValue == null)
-                                searchArgValue = Helpers.Context.Request.QueryString[searchArgKey];
+                            // Search In Form (File)
+                            // Search In Form (Field)
+                            // Search In Query
+                            searchArgValue ??= 
+                                Helpers.Context.Request.Body.File[searchArgKey] 
+                                    ?? (object)Helpers.Context.Request.Body.Form[searchArgKey] 
+                                    ?? Helpers.Context.Request.QueryString[searchArgKey];
 
                             return new Tuple<bool, object>(true, searchArgValue);
-                        case '@':
+                        case PropertyConstants.OBJECT:
                             // Search in Values Set for Current Request Session
                             return this.RenderObjectItem();
                         default:
@@ -208,8 +203,8 @@ namespace Xeora.Web.Directives
             return new Tuple<bool, object>(true, cookieItem == null ? string.Empty : cookieItem.Value);
         }
 
-        private Tuple<bool, object> RenderStaticString() => 
-            new Tuple<bool, object>(true, this._RawValue.Substring(1));
+        private Tuple<bool, object> RenderStaticString() =>
+            new(true, this._RawValue.Substring(1));
 
         private Tuple<bool, object> RenderDataItem()
         {
@@ -254,15 +249,15 @@ namespace Xeora.Web.Directives
 
             switch (objectItemKey[0])
             {
-                case '-':
+                case PropertyConstants.SESSION:
                     objectItem = Helpers.Context.Session[objectItemKey.Substring(1)];
 
                     break;
-                case '&':
+                case PropertyConstants.APPLICATION:
                     objectItem = Helpers.Context.Application[objectItemKey.Substring(1)];
 
                     break;
-                case '#':
+                case PropertyConstants.DATA_FIELD:
                     IDirective searchDirective = this._Directive;
                     Property.LocateLeveledContentInfo(ref objectItemKey, ref searchDirective);
 
@@ -272,8 +267,8 @@ namespace Xeora.Web.Directives
                         objectItem = null;
 
                     break;
-                case '.':
-                    objectItem = this._Directive.Arguments[objectItemKey.Substring(1)];
+                case PropertyConstants.DIRECTIVE:
+                    objectItem = this._Directive.Arguments?[objectItemKey.Substring(1)];
 
                     break;
                 default:
@@ -375,7 +370,7 @@ namespace Xeora.Web.Directives
             do
             {
                 if (directive == null) return;
-                if (searchItemKey.IndexOf("#", StringComparison.InvariantCulture) != 0) return;
+                if (searchItemKey.IndexOf(PropertyConstants.DATA_FIELD, StringComparison.InvariantCulture) != 0) return;
                 
                 searchItemKey = 
                     searchItemKey.Substring(1);
