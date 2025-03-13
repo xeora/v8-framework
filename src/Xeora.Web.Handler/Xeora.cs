@@ -769,13 +769,17 @@ namespace Xeora.Web.Handler
             string updateBlockControlId =
                 this.Context.Request.Header["X-BlockRenderingId"];
 
-            if (!string.IsNullOrEmpty(updateBlockControlId))
-                this._DomainControl.RenderService(messageResult, updateBlockControlId.Split('>'));
-            else
-                this._DomainControl.RenderService(messageResult, null);
+            this._DomainControl.RenderService(
+                messageResult,
+                !string.IsNullOrEmpty(updateBlockControlId) 
+                    ? updateBlockControlId.Split('>') 
+                    : null
+            );
 
             if (this.Context.Response.Header.Status.Code == 200 && this._DomainControl.ServiceResult.HasErrors)
                 this.Context.Response.Header.Status.Code = 218;
+
+            this.Context.Response.Header.KeepAlive = false;
 
             StringBuilder sB = new StringBuilder();
 
