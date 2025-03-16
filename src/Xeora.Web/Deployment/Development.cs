@@ -30,10 +30,10 @@ namespace Xeora.Web.Deployment
             // !--
 
             // -- Control Those System Essential Files are Exists! --
+            string configurationXml =
+                Path.Combine(this.DomainRootPath, "Configuration.xml");
             string controlsXml =
                 Path.Combine(this.TemplatesRegistration, "Controls.xml");
-            string configurationXml =
-                Path.Combine(this.TemplatesRegistration, "Configuration.xml");
 
             if (!File.Exists(configurationXml))
                 throw new Exceptions.DeploymentException(Global.SystemMessages.ESSENTIAL_CONFIGURATIONNOTFOUND + "!");
@@ -103,7 +103,7 @@ namespace Xeora.Web.Deployment
         public string ProvideConfigurationContent()
         {
             string configurationFile =
-                Path.Combine(this.TemplatesRegistration, "Configuration.xml");
+                Path.Combine(this.DomainRootPath, "Configuration.xml");
 
             try
             {

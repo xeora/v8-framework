@@ -16,11 +16,10 @@ namespace Xeora.Web.Deployment
         private void CheckIntegrity()
         {
             // -- Control Those System Essential Files are Exists! --
+            FileEntry configurationFileEntry =
+                this.Extractor.Get(this.DomainRootPath, "Configuration.xml");
             FileEntry controlsXmlFileEntry =
                 this.Extractor.Get(this.TemplatesRegistration, "Controls.xml");
-            FileEntry configurationFileEntry =
-                this.Extractor.Get(this.TemplatesRegistration, "Configuration.xml");
-
             if (configurationFileEntry.Index == -1)
                 throw new Exceptions.DeploymentException(Global.SystemMessages.ESSENTIAL_CONFIGURATIONNOTFOUND + "!");
 
@@ -140,7 +139,7 @@ namespace Xeora.Web.Deployment
         public string ProvideConfigurationContent()
         {
             FileEntry fileEntry =
-                this.Extractor.Get(this.TemplatesRegistration, "Configuration.xml");
+                this.Extractor.Get(this.DomainRootPath, "Configuration.xml");
 
             if (fileEntry.Index == -1)
                 return string.Empty;

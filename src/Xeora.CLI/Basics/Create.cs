@@ -147,7 +147,7 @@ namespace Xeora.CLI.Basics
 
                 DirectoryInfo templatesRoot =
                     domainRoot.CreateSubdirectory("Templates");
-                tasks.Add(CreateConfigurationFile(templatesRoot, this._LanguageCode));
+                tasks.Add(CreateConfigurationFile(domainRoot, this._LanguageCode));
                 tasks.Add(CreateControlsFile(templatesRoot));
                 tasks.Add(CreateDefaultTemplateFile(templatesRoot));
 
