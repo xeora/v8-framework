@@ -31,7 +31,7 @@ namespace Xeora.Web.Deployment
 
             // -- Control Those System Essential Files are Exists! --
             string configurationXml =
-                Path.Combine(this.DomainRootPath, "Configuration.xml");
+                Path.Combine(this.RootRegistration, "Configuration.xml");
             string controlsXml =
                 Path.Combine(this.TemplatesRegistration, "Controls.xml");
 
@@ -49,6 +49,7 @@ namespace Xeora.Web.Deployment
         public string ExecutablesRegistration => Path.Combine(this.DomainRootPath, "Executables");
         public string TemplatesRegistration => Path.Combine(this.DomainRootPath, "Templates");
         public string LanguagesRegistration => Path.Combine(this.DomainRootPath, "Languages");
+        public string RootRegistration => this.DomainRootPath;
 
         public void ProvideContentFileStream(string languageId, string requestedFilePath, out Stream outputStream)
         {
@@ -103,7 +104,7 @@ namespace Xeora.Web.Deployment
         public string ProvideConfigurationContent()
         {
             string configurationFile =
-                Path.Combine(this.DomainRootPath, "Configuration.xml");
+                Path.Combine(this.RootRegistration, "Configuration.xml");
 
             try
             {

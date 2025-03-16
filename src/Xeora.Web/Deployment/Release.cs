@@ -17,7 +17,7 @@ namespace Xeora.Web.Deployment
         {
             // -- Control Those System Essential Files are Exists! --
             FileEntry configurationFileEntry =
-                this.Extractor.Get(this.DomainRootPath, "Configuration.xml");
+                this.Extractor.Get(this.RootRegistration, "Configuration.xml");
             FileEntry controlsXmlFileEntry =
                 this.Extractor.Get(this.TemplatesRegistration, "Controls.xml");
             if (configurationFileEntry.Index == -1)
@@ -34,6 +34,7 @@ namespace Xeora.Web.Deployment
         public string ExecutablesRegistration => Path.Combine(this.DomainRootPath, "Executables");
         public string TemplatesRegistration => "\\Templates\\";
         public string LanguagesRegistration => "\\Languages\\";
+        public string RootRegistration => "\\";
 
         private Extractor Extractor { get; }
 
@@ -139,7 +140,7 @@ namespace Xeora.Web.Deployment
         public string ProvideConfigurationContent()
         {
             FileEntry fileEntry =
-                this.Extractor.Get(this.DomainRootPath, "Configuration.xml");
+                this.Extractor.Get(this.RootRegistration, "Configuration.xml");
 
             if (fileEntry.Index == -1)
                 return string.Empty;
