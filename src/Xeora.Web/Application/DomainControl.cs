@@ -264,6 +264,7 @@ namespace Xeora.Web.Application
                         }
 
                         break;
+                    case Basics.Domain.ServiceTypes.Service:
                     case Basics.Domain.ServiceTypes.xSocket:
                     case Basics.Domain.ServiceTypes.WebSocket:
                         this.IsAuthenticationRequired = serviceItem.Authentication;
@@ -276,40 +277,40 @@ namespace Xeora.Web.Application
                 this.ServiceMimeType = serviceItem.MimeType;
 
                 this.Domain = cachedInstance;
+
+                return;
             }
+
+            // If ServiceItem is null but ServiceDefinition is not, then there should be a map match
+            // with a service on other domain. So start the whole process with the rewritten url
+
+            if (this.ServiceDefinition != null && this.ServiceDefinition.Mapped)
+            {
+                this.Build();
+
+                return;
+            }
+
+            if (!activateChildrenSearch)
+                this.ServiceDefinition = null;
             else
             {
-                // If ServiceItem is null but ServiceDefinition is not, then there should be a map match
-                // with the a service on other domain. So start the whole process with the rewritten url
+                // Search SubDomains For Match
+                workingInstance =
+                    this.SearchChildrenThatOverrides(ref workingInstance, ref url);
 
-                if (this.ServiceDefinition != null && this.ServiceDefinition.Mapped)
+                if (workingInstance != null)
                 {
-                    this.Build();
+                    // Set the Working domain as child domain for this call because call requires the child domain access!
+                    this.Domain = workingInstance;
+                    this.PrepareService(url, true);
 
                     return;
                 }
 
-                if (!activateChildrenSearch)
-                    this.ServiceDefinition = null;
-                else
-                {
-                    // Search SubDomains For Match
-                    workingInstance =
-                        this.SearchChildrenThatOverrides(ref workingInstance, ref url);
-
-                    if (workingInstance != null)
-                    {
-                        // Set the Working domain as child domain for this call because call requires the child domain access!
-                        this.Domain = workingInstance;
-                        this.PrepareService(url, true);
-
-                        return;
-                    }
-
-                    // Nothing Found in Anywhere
-                    //[Shared].Helpers.Context.Response.StatusCode = 404
-                    this.ServiceDefinition = null;
-                }
+                // Nothing Found in Anywhere
+                //[Shared].Helpers.Context.Response.StatusCode = 404
+                this.ServiceDefinition = null;
             }
         }
 
@@ -462,11 +463,14 @@ namespace Xeora.Web.Application
                     $"Xeora.Web._sps_v{XeoraJsVersion}.js");
         }
 
-        public Basics.Execution.Bind GetxSocketBind()
+        public Basics.Execution.Bind GetServiceBind()
         {
             Basics.Execution.Bind rBind = null;
 
-            if (this.ServiceType is Basics.Domain.ServiceTypes.xSocket or Basics.Domain.ServiceTypes.WebSocket &&
+            if (this.ServiceType is 
+                    Basics.Domain.ServiceTypes.Service or 
+                    Basics.Domain.ServiceTypes.xSocket or 
+                    Basics.Domain.ServiceTypes.WebSocket &&
                 !string.IsNullOrEmpty(this._ExecuteIn))
                 rBind = Basics.Execution.Bind.Make(this._ExecuteIn);
 

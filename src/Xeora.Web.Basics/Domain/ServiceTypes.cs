@@ -3,6 +3,7 @@
     public enum ServiceTypes
     {
         Template,
+        Service,
         xSocket,
         WebSocket
     }

@@ -112,7 +112,7 @@ namespace Xeora.Web.Handler
 
                 if (this.WebSocket != null)
                 {
-                    this.HandleServiceRequest(); // Service Request (Template, xSocket, webSocket)
+                    this.HandleXeoraRequest();
                     return true;
                 }
 
@@ -150,7 +150,7 @@ namespace Xeora.Web.Handler
                 if (this._DomainControl.ServiceDefinition == null)
                     this.HandleStaticFile(); // Static File that has the same level of Application folder or Domain Content File
                 else
-                    this.HandleServiceRequest(); // Service Request (Template, xSocket, webSocket)
+                    this.HandleXeoraRequest();
 
                 return true;
             }
@@ -270,7 +270,7 @@ namespace Xeora.Web.Handler
             this.PostRequestedStaticFileToClient();
         }
 
-        private void HandleServiceRequest()
+        private void HandleXeoraRequest()
         {
             if (this._DomainControl.IsAuthenticationRequired)
             {
@@ -282,6 +282,10 @@ namespace Xeora.Web.Handler
             {
                 case Basics.Domain.ServiceTypes.Template:
                     this.HandleTemplateRequest();
+
+                    break;
+                case Basics.Domain.ServiceTypes.Service:
+                    this.HandleServiceRequest();
 
                     break;
                 case Basics.Domain.ServiceTypes.xSocket:
@@ -380,6 +384,43 @@ namespace Xeora.Web.Handler
 
             this.CreateTemplateResult(messageResult, methodResult);
         }
+        
+        private void HandleServiceRequest()
+        {
+            this.Context.Response.Header.AddOrUpdate("Content-Type", this._DomainControl.ServiceMimeType);
+            this.Context.Response.Header.AddOrUpdate("Content-Encoding", "identity");
+
+            // Decode Encoded Call Function to Readable
+            Basics.Execution.Bind bind =
+                this._DomainControl.GetServiceBind();
+
+            bind.Parameters.Prepare(
+                parameter => Property.Render(null, parameter.Query).Item2
+            );
+
+            List<KeyValuePair<string, object>> keyValueList = new List<KeyValuePair<string, object>>();
+            foreach (Basics.Execution.ProcedureParameter item in bind.Parameters)
+                keyValueList.Add(new KeyValuePair<string, object>(item.Key, item.Value));
+
+            Basics.Execution.InvokeResult<object> invokeResult =
+                Web.Manager.Executer.InvokeBind<object>(Helpers.Context.Request.Header.Method, bind, Web.Manager.ExecuterTypes.Undefined);
+
+            if (invokeResult.Exception != null)
+                throw new Exceptions.ServiceSocketException(invokeResult.Exception.ToString());
+
+            if (invokeResult.Result is not Message messageResult)
+            {
+                this.WriteOutput(
+                    this._DomainControl.ServiceMimeType,
+                    Web.Manager.Executer.GetPrimitiveValue(invokeResult.Result) ?? string.Empty,
+                    this._SupportCompression
+                );
+                return;
+            }
+            
+            if (messageResult.Type == Message.Types.Error)
+                throw new Exceptions.ServiceSocketException(messageResult.Content);
+        }
 
         private void HandlexSocketRequest()
         {
@@ -388,7 +429,7 @@ namespace Xeora.Web.Handler
 
             // Decode Encoded Call Function to Readable
             Basics.Execution.Bind bind =
-                this._DomainControl.GetxSocketBind();
+                this._DomainControl.GetServiceBind();
 
             bind.Parameters.Prepare(
                 parameter => Property.Render(null, parameter.Query).Item2
@@ -413,7 +454,7 @@ namespace Xeora.Web.Handler
             if (invokeResult.Exception != null)
                 throw new Exceptions.ServiceSocketException(invokeResult.Exception.ToString());
 
-            if (!(invokeResult.Result is Message messageResult)) return;
+            if (invokeResult.Result is not Message messageResult) return;
             
             if (messageResult.Type == Message.Types.Error)
                 throw new Exceptions.ServiceSocketException(messageResult.Content);
@@ -423,7 +464,7 @@ namespace Xeora.Web.Handler
         {
             // Decode Encoded Call Function to Readable
             Basics.Execution.Bind bind =
-                this._DomainControl.GetxSocketBind();
+                this._DomainControl.GetServiceBind();
 
             bind.Parameters.Prepare(
                 parameter => Property.Render(null, parameter.Query).Item2
