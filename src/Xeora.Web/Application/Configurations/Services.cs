@@ -58,7 +58,7 @@ namespace Xeora.Web.Application.Configurations
                     tServiceItem.StandAlone = standAlone;
 
                     tServiceItem.ExecuteIn = 
-                        xPathIter.Current?.GetAttribute("executein", xPathIter.Current.BaseURI);
+                        xPathIter.Current?.GetAttribute("executeIn", xPathIter.Current.BaseURI);
                     tServiceItem.AuthenticationKeys = authenticationKeys.ToArray();
 
                     string mimeType = 
