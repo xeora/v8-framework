@@ -284,16 +284,13 @@ namespace Xeora.Web.Application
             // If ServiceItem is null but ServiceDefinition is not, then there should be a map match
             // with a service on other domain. So start the whole process with the rewritten url
 
-            if (this.ServiceDefinition != null && this.ServiceDefinition.Mapped)
+            if (this.ServiceDefinition is { Mapped: true })
             {
                 this.Build();
-
                 return;
             }
 
-            if (!activateChildrenSearch)
-                this.ServiceDefinition = null;
-            else
+            if (activateChildrenSearch)
             {
                 // Search SubDomains For Match
                 workingInstance =
@@ -310,8 +307,9 @@ namespace Xeora.Web.Application
 
                 // Nothing Found in Anywhere
                 //[Shared].Helpers.Context.Response.StatusCode = 404
-                this.ServiceDefinition = null;
             }
+
+            this.ServiceDefinition = null;
         }
 
         private Basics.ServiceDefinition TryResolveUrl(ref Basics.Domain.IDomain workingInstance, Basics.Context.IUrl url)
