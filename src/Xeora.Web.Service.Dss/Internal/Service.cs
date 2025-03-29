@@ -5,7 +5,7 @@ namespace Xeora.Web.Service.Dss.Internal
 {
     internal class Service : Basics.Dss.IDss, IService
     {
-        private readonly object _Lock = new object();
+        private readonly object _Lock = new();
         private readonly Dictionary<string, ServiceItem> _Items;
         private readonly short _ExpiresInMinute;
 
