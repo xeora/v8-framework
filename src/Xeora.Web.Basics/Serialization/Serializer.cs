@@ -12,7 +12,7 @@ namespace Xeora.Web.Basics.Serialization
         public static byte[] Serialize(object value)
         {
             if (value == null)
-                return SerializeString(string.Empty);
+                return null;
             
             switch (value)
             {

@@ -83,12 +83,6 @@ namespace Xeora.Web.Basics.Service
 
             VariablePoolPreCache.CleanCachedVariables(this._SessionKeyId, name);
 
-            if (value == null)
-            {
-                this._VariablePool.Set(name, null);
-                return;
-            }
-
             byte[] serializedValue =
                 Serialization.Serializer.Serialize(value);
 
