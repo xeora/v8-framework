@@ -25,7 +25,7 @@ namespace Xeora.Web.Service.Net
             Thread streamListenerThread = new Thread(this.StreamListener)
             {
                 IsBackground = true,
-                Priority = ThreadPriority.BelowNormal
+                Priority = ThreadPriority.Highest
             };
             streamListenerThread.Start();
         }
