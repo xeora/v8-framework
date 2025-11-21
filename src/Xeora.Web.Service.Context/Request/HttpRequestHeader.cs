@@ -64,7 +64,7 @@ namespace Xeora.Web.Service.Context.Request
                             case "connection":
                                 AddOrUpdate(key, value);
                                 this._StreamEnclosure.KeepAlive = 
-                                    this.KeepAlive;
+                                    string.Compare(value, "keep-alive", StringComparison.OrdinalIgnoreCase) == 0;
 
                                 break;
                             case "host":
