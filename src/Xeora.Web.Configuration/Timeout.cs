@@ -5,8 +5,8 @@ namespace Xeora.Web.Configuration
 {
     public class Timeout : Basics.Configuration.ITimeout
     {
-        private const uint DEFAULT_READ_TIMEOUT = 30000;
-        private const uint DEFAULT_WRITE_TIMEOUT = 30000;
+        private const uint DEFAULT_READ_TIMEOUT = 5000;
+        private const uint DEFAULT_WRITE_TIMEOUT = 5000;
 
         public Timeout()
         {
