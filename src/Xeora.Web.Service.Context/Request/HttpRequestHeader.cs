@@ -147,13 +147,12 @@ namespace Xeora.Web.Service.Context.Request
             const string nn = "\n\n";
             int nl;
 
-            Stream contentStream = null;
+            MemoryStream contentStream = null;
             try
             {
                 contentStream = new MemoryStream();
 
                 string content = string.Empty;
-                int eofIndex = 0;
 
                 bool completed = this._StreamEnclosure.Listen((buffer, size) =>
                 {
@@ -161,7 +160,7 @@ namespace Xeora.Web.Service.Context.Request
                     content += Encoding.ASCII.GetString(buffer, 0, size);
 
                     nl = 4;
-                    eofIndex = 
+                    int eofIndex = 
                         content.IndexOf(rnrn, StringComparison.Ordinal);
                     if (eofIndex == -1)
                     {
@@ -174,15 +173,17 @@ namespace Xeora.Web.Service.Context.Request
                     eofIndex += nl;
 
                     byte[] residualData = new byte[content.Length - eofIndex];
-                    contentStream.Seek(eofIndex, SeekOrigin.Begin);
+                    contentStream.Seek(residualData.Length * -1, SeekOrigin.Current);
                     contentStream.ReadExactly(residualData, 0, residualData.Length);
 
                     this._StreamEnclosure.Return(residualData, 0, residualData.Length);
 
+                    content = content[..eofIndex];
+
                     return false;
                 });
 
-                return !completed ? string.Empty : content.Substring(0, eofIndex);
+                return !completed ? string.Empty : content;
             }
             finally
             {
