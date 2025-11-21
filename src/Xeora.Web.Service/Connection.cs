@@ -29,9 +29,9 @@ namespace Xeora.Web.Service
                 remoteStream.WriteTimeout = (int) Basics.Configurations.Xeora.Service.Timeout.Write;
 
                 Net.NetworkStream streamEnclosure = 
-                    new Net.NetworkStream(ref remoteStream);
+                    new Net.NetworkStream(remoteStream);
                 
-                this.Handle(connectionId, ref streamEnclosure);
+                this.Handle(connectionId, streamEnclosure);
                 
                 streamEnclosure.Close();
             }
@@ -49,14 +49,14 @@ namespace Xeora.Web.Service
             {
                 remoteStream = 
                     new SslStream(this._RemoteClient.GetStream(), true);
-                return this.Authenticate(ref remoteStream);
+                return this.Authenticate(remoteStream);
             }
             
             remoteStream = this._RemoteClient.GetStream();
             return true;
         }
         
-        private bool Authenticate(ref Stream remoteStream)
+        private bool Authenticate(Stream remoteStream)
         {
             try
             {
@@ -95,7 +95,7 @@ namespace Xeora.Web.Service
             }
         }
 
-        private void Handle(string connectionId, ref Net.NetworkStream remoteStream)
+        private void Handle(string connectionId, Net.NetworkStream remoteStream)
         {
             Basics.Logging.Current
                 .Debug(
