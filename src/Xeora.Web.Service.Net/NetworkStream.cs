@@ -34,14 +34,20 @@ namespace Xeora.Web.Service.Net
         {
             SpinWait spinWait = new SpinWait();
             byte[] buffer = 
-                new byte[NetworkStream.BUFFER_SIZE];
+                new byte[BUFFER_SIZE];
 
+            bool isNetworkStream = 
+                this._RemoteStream is System.Net.Sockets.NetworkStream;
+            
             do
             {
                 try
                 {
-                    int rC = 
-                        this._RemoteStream.Read(buffer, 0, buffer.Length);
+                    bool available =
+                        !isNetworkStream || ((System.Net.Sockets.NetworkStream)this._RemoteStream).DataAvailable;
+
+                    int rC =
+                        available ? this._RemoteStream.Read(buffer, 0, buffer.Length) : 0;
                     if (rC == 0)
                     {
                         spinWait.SpinOnce();
@@ -186,7 +192,7 @@ namespace Xeora.Web.Service.Net
         }
 
         public bool KeepAlive { get; set; }
-        public bool Disposed { get; private set; }
+        public bool Disposed { get => this._Disposed; private set => this._Disposed = value; }
         public override bool CanRead => this._RemoteStream.CanRead;
         public override bool CanSeek => this._RemoteStream.CanSeek;
         public override bool CanWrite => this._RemoteStream.CanWrite;
