@@ -8,13 +8,15 @@ namespace Xeora.Web.Service.Net
 {
     public class NetworkStream : Stream
     {
-        private const int BUFFER_SIZE = 2048;
+        private volatile bool _Disposed;
+        
+        private const int BUFFER_SIZE = 1024 * 64; // 64kb
         private readonly Stream _RemoteStream;
 
         private readonly ConcurrentQueue<byte[]> _IncomeCache;
         private readonly ConcurrentStack<byte[]> _Residual;
 
-        public NetworkStream(ref Stream remoteStream)
+        public NetworkStream(Stream remoteStream)
         {
             this._RemoteStream = remoteStream;
 
