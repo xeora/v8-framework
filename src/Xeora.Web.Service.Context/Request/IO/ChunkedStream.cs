@@ -75,7 +75,7 @@ namespace Xeora.Web.Service.Context.Request.IO
             const string rn = "\r\n";
             const int nl = 2;
 
-            string content = string.Empty;
+            string header = string.Empty;
 
             byte[] chunkBuffer = 
                 new byte[sbyte.MaxValue];
@@ -98,20 +98,20 @@ namespace Xeora.Web.Service.Context.Request.IO
                         continue;
                     }
 
-                    content += System.Text.Encoding.ASCII.GetString(chunkBuffer, 0, bR);
+                    header += System.Text.Encoding.ASCII.GetString(chunkBuffer, 0, bR);
 
-                    int eofIndex = content.IndexOf(rn, StringComparison.Ordinal);
+                    int eofIndex = header.IndexOf(rn, StringComparison.Ordinal);
                     if (eofIndex == -1) continue;
 
                     // Clean up unrelated characters
-                    content = content.Remove(eofIndex);
+                    header = header.Substring(0, eofIndex);
                     
                     // Check if there is any chunk-extension
                     // https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.6.1
-                    int separatorIndex = content.IndexOf(';', 0);
+                    int separatorIndex = header.IndexOf(';', 0);
                     if (separatorIndex == -1)
                     {
-                        separatorIndex = content.IndexOf(' ', 0);
+                        separatorIndex = header.IndexOf(' ', 0);
                         if (separatorIndex == -1) separatorIndex = eofIndex;
                     }
 
@@ -119,7 +119,7 @@ namespace Xeora.Web.Service.Context.Request.IO
                     try
                     {
                         contentLength = 
-                            Convert.ToInt32(content[..separatorIndex], 16);
+                            Convert.ToInt32(header[..separatorIndex], 16);
                     }
                     catch
                     {
@@ -127,10 +127,10 @@ namespace Xeora.Web.Service.Context.Request.IO
                     }
                     
                     eofIndex += nl;
-                    this.StreamEnclosure.Return(chunkBuffer, eofIndex, bR - eofIndex);
                     
                     if (contentLength == 0)
                     {
+                        this.StreamEnclosure.Return(chunkBuffer, eofIndex, bR - eofIndex);
                         this.StreamEnclosure.Throw(nl);
                         this._ChunkCompleted = true;
                         break;
@@ -138,13 +138,23 @@ namespace Xeora.Web.Service.Context.Request.IO
                     
                     byte[] chunkContentBytes = 
                         new byte[contentLength + nl];
-                    bR = this.ReadWithLength(chunkContentBytes, 0, chunkContentBytes.Length);
-                    if (bR != chunkContentBytes.Length) return ParserResultTypes.BadRequest;
                     
-                    bufferStream.Write(chunkContentBytes, 0, bR - nl);
+                    int floodingLength = bR - eofIndex;
+                    if (floodingLength > chunkContentBytes.Length)
+                    {
+                        this.StreamEnclosure.Return(chunkBuffer, eofIndex + chunkContentBytes.Length, floodingLength - chunkContentBytes.Length);
+                        floodingLength = chunkContentBytes.Length;
+                    }
+                    
+                    Array.Copy(chunkBuffer, eofIndex, chunkContentBytes, 0, floodingLength);
+                    
+                    bR = this.ReadWithLength(chunkContentBytes, floodingLength, chunkContentBytes.Length - floodingLength);
+                    if (bR != chunkContentBytes.Length - floodingLength) return ParserResultTypes.BadRequest;
+                    
+                    bufferStream.Write(chunkContentBytes, 0, contentLength);
                     if (bufferStream.Length >= count) break;
                     
-                    content = string.Empty;
+                    header = string.Empty;
                 } while (true);
                 
                 read = this.ReadInto(ref bufferStream, buffer, offset, count);
