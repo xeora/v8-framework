@@ -32,6 +32,8 @@ namespace Xeora.Web.Service
                     new Net.NetworkStream(ref remoteStream);
                 
                 this.Handle(connectionId, ref streamEnclosure);
+                
+                streamEnclosure.Close();
             }
 
             remoteStream.Close();

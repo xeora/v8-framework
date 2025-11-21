@@ -57,9 +57,8 @@ namespace Xeora.Web.Service.Net
                 catch
                 {
                     this.Disposed = true;
-                    return;
                 }
-            } while (true);
+            } while (!this.Disposed);
         }
 
         public bool Alive()
@@ -208,5 +207,11 @@ namespace Xeora.Web.Service.Net
 
         public void BumpToWebSocket() =>
             this._RemoteStream.ReadTimeout = 5 * 60 * 10000;
+
+        public override void Close()
+        {
+            base.Close();
+            this.Disposed = true;
+        }
     }
 }

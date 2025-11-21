@@ -61,6 +61,12 @@ namespace Xeora.Web.Service.Context.Request
 
                         switch (key.ToLowerInvariant())
                         {
+                            case "connection":
+                                AddOrUpdate(key, value);
+                                this._StreamEnclosure.KeepAlive = 
+                                    this.KeepAlive;
+
+                                break;
                             case "host":
                                 this.Host = value;
 
@@ -219,7 +225,7 @@ namespace Xeora.Web.Service.Context.Request
         public Basics.Context.IHttpCookie Cookie { get; }
 
         public bool KeepAlive => 
-            !string.IsNullOrEmpty(this["Connection"]) && this["Connection"].IndexOf("keep-alive", StringComparison.Ordinal) > -1;
+            this._StreamEnclosure.KeepAlive;
         public bool WebSocket { get; private set; }
 
         internal void ReplacePath(string rawUrl) =>
