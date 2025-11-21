@@ -188,12 +188,12 @@ namespace Xeora.Web.Service.Context
                 return;
             }
 
+            streamEnclosure.KeepAlive = this.Header.KeepAlive;
+            
             this.PushHeaders(streamEnclosure);
             
             this._ResponseOutput.Seek(0, SeekOrigin.Begin);
             this._ResponseOutput.CopyTo(streamEnclosure);
-            
-            streamEnclosure.KeepAlive = this.Header.KeepAlive;
         }
 
         internal void Dispose()
