@@ -187,9 +187,13 @@ namespace Xeora.Web.Service
                     Workers.Factory.Spin(
                         (connectionId, c) =>
                         {
+                            DateTime spinBegins = DateTime.Now;
+
                             ((Connection)c).Process(connectionId);
                             Workers.Factory.FinalizeConnection(connectionId);
-                            
+
+                            Server.PrintSpinAnalysis(spinBegins);
+
                             this._SemaphoreSlim?.Release();
                         },
                         new Connection(ref remoteClient, this._Certificate)
@@ -211,6 +215,39 @@ namespace Xeora.Web.Service
                         .Flush();
                 }
             }
+        }
+
+        private static void PrintSpinAnalysis(DateTime spinBegins)
+        {
+            if (!Basics.Configurations.Xeora.Application.Main.PrintAnalysis) return;
+
+            double totalMs =
+                DateTime.Now.Subtract(spinBegins).TotalMilliseconds;
+
+            if (totalMs > Basics.Configurations.Xeora.Application.Main.AnalysisThreshold)
+            {
+                Basics.Logging.Current
+                    .Warning(
+                        "analysed - worker spin duration",
+                        new Dictionary<string, object>
+                        {
+                            { "duration", totalMs }
+                        }
+                    )
+                    .Flush();
+
+                return;
+            }
+
+            Basics.Logging.Current
+                .Information(
+                    "analysed - worker spin duration",
+                    new Dictionary<string, object>
+                    {
+                        { "duration", totalMs }
+                    }
+                )
+                .Flush();
         }
 
         private static void PrintLogo()
