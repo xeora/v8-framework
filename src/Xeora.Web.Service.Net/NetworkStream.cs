@@ -8,7 +8,7 @@ namespace Xeora.Web.Service.Net
 {
     public class NetworkStream : Stream
     {
-        private volatile bool _Disposed;
+        private long _Disposed;
         
         private const int BUFFER_SIZE = 1024 * 64; // 64kb
         private readonly Stream _RemoteStream;
@@ -64,7 +64,7 @@ namespace Xeora.Web.Service.Net
                 }
                 catch
                 {
-                    this.Disposed = true;
+                    this.MarkAsDisposed();
                 }
             } while (!this.Disposed);
         }
@@ -194,7 +194,7 @@ namespace Xeora.Web.Service.Net
         }
 
         public bool KeepAlive { get; set; }
-        public bool Disposed { get => this._Disposed; private set => this._Disposed = value; }
+        public bool Disposed => Interlocked.Read(ref this._Disposed) > 0;
         public override bool CanRead => this._RemoteStream.CanRead;
         public override bool CanSeek => this._RemoteStream.CanSeek;
         public override bool CanWrite => this._RemoteStream.CanWrite;
@@ -216,10 +216,12 @@ namespace Xeora.Web.Service.Net
         public void BumpToWebSocket() =>
             this._RemoteStream.ReadTimeout = 5 * 60 * 10000;
 
+        private void MarkAsDisposed() => Interlocked.Increment(ref this._Disposed);
+        
         public override void Close()
         {
             base.Close();
-            this.Disposed = true;
+            MarkAsDisposed();
         }
     }
 }
