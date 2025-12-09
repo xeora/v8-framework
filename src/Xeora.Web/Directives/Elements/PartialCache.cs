@@ -12,6 +12,7 @@ namespace Xeora.Web.Directives.Elements
         private readonly string[] _CacheIdExtensions;
         private readonly ContentDescription _Contents;
         private readonly bool _DynamicCache;
+        private bool _Prepared;
         private bool _Parsed;
 
         public PartialCache(string rawValue, int positionId, ArgumentCollection arguments) :
@@ -31,12 +32,12 @@ namespace Xeora.Web.Directives.Elements
         public override bool CanAsync => false;
         public override bool CanHoldVariable => false;
 
-        public override void Parse()
+        private void Prepare()
         {
-            if (this._Parsed)
+            if (this._Prepared)
                 return;
-            this._Parsed = true;
-
+            this._Prepared = true;
+            
             // PartialCache needs to link ContentArguments of its parent.
             if (this.Parent != null)
                 this.Arguments.Replace(this.Parent.Arguments);
@@ -44,7 +45,16 @@ namespace Xeora.Web.Directives.Elements
             for (int i = 0; i < this._Parameters.Length; i++)
                 this._CacheIdExtensions[i] =
                     Xeora.Web.Directives.Property.Render(this.Parent, this._Parameters[i]).Item2?.ToString();
-
+        }
+        
+        public override void Parse()
+        {
+            if (this._Parsed)
+                return;
+            this._Parsed = true;
+            
+            this.Prepare();
+            
             this.Children = new DirectiveCollection(this.Mother, this);
             this.Mother.RequestParsing(
                 this._DynamicCache
@@ -62,6 +72,8 @@ namespace Xeora.Web.Directives.Elements
             if (this.Status != RenderStatus.None)
                 return false;
             this.Status = RenderStatus.Rendering;
+            
+            this.Prepare();
             
             this.Mother.RequestInstance(out Basics.Domain.IDomain instance);
             this._InstanceIdAccessTree = instance.IdAccessTree;
