@@ -176,9 +176,8 @@ namespace Xeora.Web.Deployment
                 switch (requestResult)
                 {
                     case RequestResults.Authenticated:
-                        StreamReader sR = new StreamReader(contentStream);
-
-                        return sR.ReadToEnd();
+                        using (StreamReader sR = new StreamReader(contentStream, leaveOpen: true))
+                            return sR.ReadToEnd();
                     case RequestResults.ContentNotExists:
                         throw new FileNotFoundException();
                     case RequestResults.PasswordError:
