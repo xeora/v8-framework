@@ -30,8 +30,8 @@ namespace Xeora.Web.Service.Context.Response
 
         private void WriteChunk(byte[] buffer, int offset, int count)
         {
-            byte[] countBytes = 
-                BitConverter.GetBytes(count - offset);
+            byte[] countBytes =
+                BitConverter.GetBytes(count);
             Array.Reverse(countBytes);
             int nonZeroIndex = 0;
             for (int i = 0; i < countBytes.Length; i++)
