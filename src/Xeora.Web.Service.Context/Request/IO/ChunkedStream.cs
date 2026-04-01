@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 
 namespace Xeora.Web.Service.Context.Request.IO
 {
@@ -77,12 +78,13 @@ namespace Xeora.Web.Service.Context.Request.IO
 
             string header = string.Empty;
 
-            byte[] chunkBuffer = 
+            byte[] chunkBuffer =
                 new byte[sbyte.MaxValue];
 
             try
             {
                 bufferStream = new MemoryStream();
+                SpinWait spinWait = new SpinWait();
 
                 do
                 {
@@ -92,11 +94,13 @@ namespace Xeora.Web.Service.Context.Request.IO
                     {
                         if (this.StreamEnclosure.Disposed)
                             return ParserResultTypes.BadRequest;
-                        
-                        System.Threading.Thread.Sleep(1);
+
+                        spinWait.SpinOnce();
 
                         continue;
                     }
+
+                    spinWait.Reset();
 
                     header += System.Text.Encoding.ASCII.GetString(chunkBuffer, 0, bR);
 
