@@ -9,12 +9,14 @@ namespace Xeora.Web.Handler
     {
         private readonly ConcurrentDictionary<string, Container> _Handlers;
         private readonly object _RefreshLock;
+        private readonly object _DropLock;
         private bool _Refresh;
-        
+
         private Manager()
         {
             this._Handlers = new ConcurrentDictionary<string, Container>();
             this._RefreshLock = new object();
+            this._DropLock = new object();
 
             Basics.Console
                 .Register(keyInfo => {
@@ -84,24 +86,30 @@ namespace Xeora.Web.Handler
 
         public void Keep(string handlerId)
         {
-            if (!this._Handlers.TryGetValue(handlerId, out Container handlerContainer))
-                return;
+            lock (this._DropLock)
+            {
+                if (!this._Handlers.TryGetValue(handlerId, out Container handlerContainer))
+                    return;
 
-            handlerContainer.Removable = false;
+                handlerContainer.Removable = false;
+            }
         }
 
         public void Drop(string handlerId)
         {
-            if (!this._Handlers.TryGetValue(handlerId, out Container handlerContainer))
-                return;
-
-            if (handlerContainer.Removable)
+            lock (this._DropLock)
             {
-                this._Handlers.TryRemove(handlerId, out handlerContainer);
-                handlerContainer?.Handler.Context?.Dispose();
-                return;
+                if (!this._Handlers.TryGetValue(handlerId, out Container handlerContainer))
+                    return;
+
+                if (handlerContainer.Removable)
+                {
+                    this._Handlers.TryRemove(handlerId, out handlerContainer);
+                    handlerContainer?.Handler.Context?.Dispose();
+                    return;
+                }
+                handlerContainer.Removable = true;
             }
-            handlerContainer.Removable = true;
         }
 
         public void Refresh()
