@@ -41,7 +41,7 @@ namespace Xeora.Web.Configuration
                 if (Array.IndexOf(this._BannedFiles, forbiddenDomain) == -1)
                 {
                     string[] fixedBannedFiles = new string[this._BannedFiles.Length + 1];
-                    Array.Copy(this._BannedFiles, fixedBannedFiles, this.BannedFiles.Length);
+                    Array.Copy(this._BannedFiles, fixedBannedFiles, this._BannedFiles.Length);
 
                     fixedBannedFiles[^1] = forbiddenDomain;
 
@@ -54,7 +54,7 @@ namespace Xeora.Web.Configuration
                 if (Array.IndexOf(this._BannedFiles, forbiddenXeoraSettingsJson) == -1)
                 {
                     string[] fixedBannedFiles = new string[this._BannedFiles.Length + 1];
-                    Array.Copy(this._BannedFiles, fixedBannedFiles, this.BannedFiles.Length);
+                    Array.Copy(this._BannedFiles, fixedBannedFiles, this._BannedFiles.Length);
 
                     fixedBannedFiles[^1] = forbiddenXeoraSettingsJson;
 
