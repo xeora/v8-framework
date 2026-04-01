@@ -220,8 +220,8 @@ namespace Xeora.Web.Service.Net
         
         public override void Close()
         {
-            base.Close();
             MarkAsDisposed();
+            base.Close();
         }
     }
 }
