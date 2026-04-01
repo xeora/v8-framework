@@ -41,7 +41,7 @@ namespace Xeora.Web.Service.TaskScheduler
 
         public string RegisterTask(Action<object[]> schedulerCallBack, object[] @params, TimeSpan executionTime)
         {
-            DateTime absoluteExecutionTime = DateTime.Now.Add(executionTime);
+            DateTime absoluteExecutionTime = DateTime.UtcNow.Add(executionTime);
 
             return this.RegisterTask(schedulerCallBack, @params, absoluteExecutionTime);
         }

@@ -3,7 +3,7 @@
     public static class DateTime
     {
         public static long Format(bool formatJustDate = false) =>
-            DateTime.Format(System.DateTime.Now, formatJustDate);
+            DateTime.Format(System.DateTime.UtcNow, formatJustDate);
 
         public static long Format(System.DateTime vDateTime, bool formatJustDate = false)
         {
